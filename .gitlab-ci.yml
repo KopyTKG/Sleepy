@@ -1,0 +1,73 @@
+# GitLab CI for sleepy.
+#
+# - `build` compiles an optimized Linux binary on every push/tag.
+# - On a tag (e.g. `v1.0.0`) the binary is uploaded to the project's generic
+#   package registry, and a GitLab Release is created with that binary attached
+#   as a downloadable asset.
+#
+# NOTE: verify against your GitLab version — the generic-packages API and the
+# `release-cli` / `release:` syntax below match current GitLab (16.x+). Older
+# instances may differ. `CI_JOB_TOKEN`, `CI_API_V4_URL`, `CI_PROJECT_ID`, and
+# `CI_COMMIT_TAG` are predefined CI variables and need no configuration.
+
+stages:
+  - build
+  - release
+
+variables:
+  # Version of the Odin nightly to install. Adjust as needed.
+  ODIN_REF: "dev-2026-06"
+  BINARY_NAME: "sleepy"
+  # Name of the generic package the binary is published under.
+  PACKAGE_NAME: "sleepy"
+
+# Reusable setup: install Odin (needs clang + LLVM) into $CI_PROJECT_DIR/odin.
+.install_odin: &install_odin
+  - apt-get update -y
+  - apt-get install -y git make clang llvm
+  - git clone --depth 1 https://github.com/odin-lang/Odin.git "$CI_PROJECT_DIR/odin"
+  - (cd "$CI_PROJECT_DIR/odin" && make release-native)
+  - export PATH="$CI_PROJECT_DIR/odin:$PATH"
+  - odin version
+
+build:
+  stage: build
+  image: ubuntu:24.04
+  before_script:
+    - *install_odin
+  script:
+    - odin build . -out:$BINARY_NAME -o:speed -no-bounds-check
+    - ./$BINARY_NAME -h || true
+  artifacts:
+    paths:
+      - $BINARY_NAME
+    expire_in: 1 week
+
+# Upload the binary (built in the `build` stage) to the generic package
+# registry, then cut a Release that links to it. Only runs on tags.
+#
+# This job uses the official release-cli image, which is required for the
+# `release:` keyword below. It consumes the `build` job's artifact instead of
+# recompiling, so no Odin toolchain is needed here.
+release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs:
+    - job: build
+      artifacts: true
+  rules:
+    - if: "$CI_COMMIT_TAG"
+  script:
+    # Upload the artifact to the project's generic package registry.
+    - |
+      curl --fail --header "JOB-TOKEN: $CI_JOB_TOKEN" \
+        --upload-file "./$BINARY_NAME" \
+        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${PACKAGE_NAME}/${CI_COMMIT_TAG}/${BINARY_NAME}"
+  release:
+    tag_name: "$CI_COMMIT_TAG"
+    name: "sleepy $CI_COMMIT_TAG"
+    description: "Automated release of sleepy $CI_COMMIT_TAG (Linux x86_64 binary)."
+    assets:
+      links:
+        - name: "$BINARY_NAME (linux-x86_64)"
+          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${PACKAGE_NAME}/${CI_COMMIT_TAG}/${BINARY_NAME}"

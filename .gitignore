@@ -1,0 +1,18 @@
+# Built binary
+/sleepy
+sleepy
+
+# Odin / C object files and debug artifacts
+*.o
+*.obj
+*.exe
+*.pdb
+*.ilk
+*.a
+*.lib
+*.so
+*.dylib
+
+# Editor / OS cruft
+.DS_Store
+*.swp
