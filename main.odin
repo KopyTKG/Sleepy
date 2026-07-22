@@ -11,6 +11,8 @@ import "core:strings"
 // sleepy: OpenAPI 3 JSON  ->  Insomnia v4 export JSON
 // ---------------------------------------------------------------------------
 
+VERSION :: "0.2.0"
+
 MAX_DEPTH :: 6
 
 // ------------------------- json.Value helpers ------------------------------
@@ -351,7 +353,7 @@ ENVIRONMENT_ID :: "env_sleepy_base"
 
 HTTP_METHODS :: []string{"get", "post", "put", "delete", "patch"}
 
-build_insomnia :: proc(spec: json.Value, source_name: string) -> json.Value {
+build_insomnia :: proc(spec: json.Value, source_name: string, base_url: string) -> json.Value {
 	resources := new_array()
 
 	// 1. workspace
@@ -377,7 +379,7 @@ build_insomnia :: proc(spec: json.Value, source_name: string) -> json.Value {
 	env["parentId"] = vstr(WORKSPACE_ID)
 	env["name"] = vstr("Base Environment")
 	env_data := new_object()
-	env_data["baseUrl"] = vstr("")
+	env_data["baseUrl"] = vstr(base_url)
 	env_data["bearer"] = vstr("")
 	env["data"] = json.Value(env_data)
 	append(&resources, json.Value(env))
@@ -560,6 +562,53 @@ build_insomnia :: proc(spec: json.Value, source_name: string) -> json.Value {
 	return root
 }
 
+// ------------------------- URL / fetch -------------------------------------
+
+is_url :: proc(s: string) -> bool {
+	return strings.has_prefix(s, "http://") || strings.has_prefix(s, "https://")
+}
+
+// Return the origin (scheme://host[:port]) of a URL, i.e. everything up to the
+// first path separator. "https://api.example.com/v1/openapi.json" ->
+// "https://api.example.com". If there is no path component the whole URL is
+// returned (with a trailing "/" trimmed).
+url_origin :: proc(url: string) -> string {
+	sep := strings.index(url, "://")
+	if sep < 0 {
+		return strings.trim_suffix(url, "/")
+	}
+	rest_start := sep + 3
+	rest := url[rest_start:]
+	slash := strings.index_byte(rest, '/')
+	if slash < 0 {
+		return strings.trim_suffix(url, "/")
+	}
+	return url[:rest_start + slash]
+}
+
+// Fetch a URL by shelling out to `curl`. Odin's standard library has no HTTPS
+// client, and most OpenAPI specs live behind https, so we lean on curl.
+fetch_url :: proc(url: string) -> ([]byte, bool) {
+	state, out, errout, err := os.process_exec(
+		os.Process_Desc{command = {"curl", "-sSfL", url}},
+		context.allocator,
+	)
+	if err != nil {
+		fmt.eprintfln("error: failed to run curl (is it installed and on PATH?): %v", err)
+		return nil, false
+	}
+	defer delete(errout)
+	if !state.success || state.exit_code != 0 {
+		fmt.eprintfln("error: curl failed (exit %d) fetching %s", state.exit_code, url)
+		if len(errout) > 0 {
+			fmt.eprint(string(errout))
+		}
+		delete(out)
+		return nil, false
+	}
+	return out, true
+}
+
 // ------------------------- IO / CLI ----------------------------------------
 
 read_all_stdin :: proc() -> ([]byte, bool) {
@@ -580,8 +629,12 @@ read_all_stdin :: proc() -> ([]byte, bool) {
 usage :: proc() {
 	fmt.eprintln("sleepy - convert an OpenAPI 3 JSON spec into an Insomnia v4 export")
 	fmt.eprintln("")
-	fmt.eprintln("usage: sleepy <spec.json> [-o <out.json>]")
-	fmt.eprintln("       sleepy - [-o <out.json>]   (read spec from stdin)")
+	fmt.eprintln("usage: sleepy <spec.json|url> [--base-url <url>] [-o <out.json>]")
+	fmt.eprintln("       sleepy - [--base-url <url>] [-o <out.json>]   (read spec from stdin)")
+	fmt.eprintln("")
+	fmt.eprintln("If the input is an http(s) URL, the spec is fetched with curl and the")
+	fmt.eprintln("environment's baseUrl is prefilled with the URL's origin. Use --base-url")
+	fmt.eprintln("to override the baseUrl (also useful for file/stdin input).")
 	fmt.eprintln("")
 	fmt.eprintln("If -o is omitted the export is written to stdout.")
 }
@@ -595,6 +648,8 @@ main :: proc() {
 
 	input_path := ""
 	output_path := ""
+	base_url := ""
+	base_url_set := false
 
 	i := 0
 	for i < len(args) {
@@ -608,8 +663,20 @@ main :: proc() {
 			}
 			output_path = args[i + 1]
 			i += 2
+		case "--base-url":
+			if i + 1 >= len(args) {
+				fmt.eprintln("error: --base-url requires a url argument")
+				usage()
+				os.exit(2)
+			}
+			base_url = args[i + 1]
+			base_url_set = true
+			i += 2
 		case "-h", "--help":
 			usage()
+			os.exit(0)
+		case "-v", "--version":
+			fmt.println(VERSION)
 			os.exit(0)
 		case:
 			if input_path == "" {
@@ -639,6 +706,16 @@ main :: proc() {
 			os.exit(1)
 		}
 		source_name = "stdin"
+	} else if is_url(input_path) {
+		ok: bool
+		data, ok = fetch_url(input_path)
+		if !ok {
+			os.exit(1)
+		}
+		// Prefill baseUrl from the URL's origin unless the user overrode it.
+		if !base_url_set {
+			base_url = url_origin(input_path)
+		}
 	} else {
 		rerr: os.Error
 		data, rerr = os.read_entire_file(input_path, context.allocator)
@@ -654,7 +731,7 @@ main :: proc() {
 		os.exit(1)
 	}
 
-	doc := build_insomnia(spec, source_name)
+	doc := build_insomnia(spec, source_name, base_url)
 	out := marshal_pretty(doc)
 
 	if output_path == "" {

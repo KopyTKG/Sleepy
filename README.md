@@ -14,7 +14,9 @@ The export contains:
 
 - A `workspace` resource (named after the spec's `info.title`).
 - One `environment` resource named **"Base Environment"** whose `data` is
-  `{ "baseUrl": "", "bearer": "" }`.
+  `{ "baseUrl": "<origin>", "bearer": "" }`. When the spec is fetched from a URL
+  (see below), `baseUrl` is prefilled with that URL's origin
+  (e.g. `https://api.example.com`); otherwise it is left empty (`""`).
 - One `request_group` (folder) per OpenAPI **tag** (the operation's first tag,
   or `default`), sorted alphabetically.
 - One `request` per operation (`get`/`post`/`put`/`delete`/`patch`), each with:
@@ -63,14 +65,23 @@ odin build . -out:sleepy -o:speed -no-bounds-check
 ## Usage
 
 ```
-sleepy <spec.json> [-o <out.json>]
-sleepy -          [-o <out.json>]   # read the spec from stdin
+sleepy <spec.json|url> [--base-url <url>] [-o <out.json>]
+sleepy -              [--base-url <url>] [-o <out.json>]   # read the spec from stdin
 ```
 
+- The input argument may be a **file path**, an **http(s) URL**, or `-` for
+  **stdin**.
+- When the input is a URL, sleepy fetches the spec with `curl` (which must be on
+  your `PATH`) and prefills the environment's `baseUrl` with the URL's **origin**
+  (scheme + host + optional port), so requests target the live API out of the
+  box.
+- `--base-url <url>` overrides the derived `baseUrl`. It works with any input
+  (file, stdin, or URL) — handy when the spec lives at a different host than the
+  API it describes.
 - If `-o` is omitted, the export is written to **stdout**.
-- If the input argument is `-`, the spec is read from **stdin**.
-- On bad usage, a usage message is printed to stderr and the process exits
-  non-zero.
+- `-v` / `--version` prints the version; `-h` / `--help` prints usage.
+- On bad usage or a failed fetch, a message is printed to stderr and the process
+  exits non-zero.
 
 ### Examples
 
@@ -81,15 +92,26 @@ sleepy openapi.json
 # From a file to a file
 sleepy openapi.json -o insomnia.json
 
-# From a live endpoint via stdin
-curl -s https://api.example.com/openapi.json | sleepy - -o insomnia.json
+# Fetch a live spec by URL — baseUrl is set to https://api.example.com
+sleepy https://api.example.com/openapi.json -o insomnia.json
+
+# Fetch by URL but point requests at a different host
+sleepy https://docs.example.com/openapi.json --base-url https://api.example.com
+
+# From a live endpoint via stdin (pipe it yourself)
+curl -s https://api.example.com/openapi.json \
+  | sleepy - --base-url https://api.example.com -o insomnia.json
 ```
 
 Then import the resulting `insomnia.json` in Insomnia via
-*Import → From File*, and fill in the `baseUrl` and `bearer` values on the
-"Base Environment".
+*Import → From File*. The `baseUrl` is already filled in when you passed a URL;
+otherwise fill in `baseUrl` (and `bearer`) on the "Base Environment".
 
 ## Scope
 
 `sleepy` targets **OpenAPI 3** JSON documents. YAML specs are not supported;
 convert them to JSON first (e.g. with `yq -o=json`).
+
+Fetching a spec by URL relies on the `curl` binary being available on your
+`PATH` — Odin's standard library has no HTTPS client. If you'd rather not depend
+on `curl`, pipe the spec in yourself (`curl ... | sleepy - --base-url ...`).
