@@ -81,6 +81,10 @@
         <Setter Property="FontSize" Value="13" />
       </Style>
 
+      <!-- The stock dialog caps at ~548px, too narrow for licence text. -->
+      <x:Double x:Key="ContentDialogMaxWidth">900</x:Double>
+      <x:Double x:Key="ContentDialogMinWidth">560</x:Double>
+
       <x:Double x:Key="SectionSpacing">18</x:Double>
 
       <!-- A section heading: small, spaced capitals. -->

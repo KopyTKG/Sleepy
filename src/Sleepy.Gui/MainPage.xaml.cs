@@ -178,6 +178,11 @@ public sealed partial class MainPage : Page
     /// components that ship with it. Embedding them here is what carries the
     /// notice into a redistributed binary.
     /// </summary>
+    /// <summary>
+    /// Shows the licence the app is distributed under, plus the notices of the
+    /// components that ship with it. Embedding them here is what carries the
+    /// notice into a redistributed binary.
+    /// </summary>
     private async void OnAboutClick(object sender, RoutedEventArgs e)
     {
         var body = new StackPanel { Spacing = 12 };
@@ -188,20 +193,25 @@ public sealed partial class MainPage : Page
             FontSize = 18,
             FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
         });
-        body.Children.Add(new TextBlock
+
+        // The copyright and licence name are not repeated here: the embedded
+        // licence text opens with both.
+        var licence = new TextBlock
         {
-            Text = $"{SleepyInfo.Copyright}\n{SleepyInfo.LicenseName}",
-            TextWrapping = TextWrapping.Wrap,
-        });
-        body.Children.Add(new TextBox
-        {
-            Text = $"{SleepyInfo.License}\n\n{SleepyInfo.ThirdPartyNotices}",
-            IsReadOnly = true,
-            AcceptsReturn = true,
+            Text = ForDisplay($"{SleepyInfo.License}\n\n{SleepyInfo.ThirdPartyNotices}"),
+            IsTextSelectionEnabled = true,
             TextWrapping = TextWrapping.Wrap,
             FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Consolas, monospace"),
             FontSize = 11.5,
-            Height = 360,
+            LineHeight = 16,
+        };
+
+        body.Children.Add(new ScrollViewer
+        {
+            Content = licence,
+            Height = 380,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
         });
 
         var dialog = new ContentDialog
@@ -209,11 +219,19 @@ public sealed partial class MainPage : Page
             XamlRoot = XamlRoot,
             Title = Localizer.Get("About_Title"),
             CloseButtonText = Localizer.Get("About_Close"),
-            Content = new ScrollViewer { Content = body, MaxWidth = 620 },
+            Content = new Grid { Children = { body }, Width = 780 },
         };
 
         await dialog.ShowAsync();
     }
+
+    /// <summary>
+    /// Normalises line endings to CRLF. The embedded texts use LF, which the
+    /// text controls collapse into a single line.
+    /// </summary>
+    private static string ForDisplay(string text)
+        => text.Replace("\r\n", "\n", StringComparison.Ordinal)
+            .Replace("\n", "\r\n", StringComparison.Ordinal);
 
     private void OnSelectAllClick(object sender, RoutedEventArgs e) => ViewModel.SelectAllModules(true);
 
