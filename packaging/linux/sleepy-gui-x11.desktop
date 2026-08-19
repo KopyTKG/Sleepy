@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=sleepy-GUI (X11)
+GenericName=OpenAPI to Insomnia converter
+Comment=Convert OpenAPI 3 specifications into Insomnia v4 collections
+Exec=sleepy-gui-x11 %f
+Icon=sleepy-gui
+Terminal=false
+Categories=Development;Utility;
+MimeType=application/json;application/x-yaml;
+Keywords=openapi;swagger;insomnia;api;
+# Lets the desktop match the running window to this entry, so the window
+# and task bar pick up the installed icon.
+StartupWMClass=sleepy-gui
