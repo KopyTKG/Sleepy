@@ -1,18 +1,33 @@
-# Built binary
-/sleepy
-sleepy
+# Build output
+bin/
+obj/
+/dist/
+/publish/
+/.nuget/
+*.dbg
+*.binlog
 
-# Odin / C object files and debug artifacts
-*.o
-*.obj
-*.exe
-*.pdb
-*.ilk
-*.a
-*.lib
-*.so
-*.dylib
+# Test output
+test-results.xml
+TestResults/
+coverage*.xml
+*.coverage
 
-# Editor / OS cruft
-.DS_Store
+# Release archives
+*.tar.gz
+*.zip
+*.nupkg
+
+# Local tool overrides
+mise.local.toml
+*.user
+launchSettings.local.json
+
+# IDE / OS cruft
+.vs/
+.vscode/
+.idea/
 *.swp
+*~
+.DS_Store
+Thumbs.db

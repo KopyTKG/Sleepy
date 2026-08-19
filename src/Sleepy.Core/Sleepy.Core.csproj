@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Sleepy</RootNamespace>
+    <AssemblyName>Sleepy.Core</AssemblyName>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="YamlDotNet" />
+  </ItemGroup>
+
+  <!-- The licence travels inside the binaries: the CLI prints it and the desktop
+       app shows it in its About dialog, so a redistributed binary carries its
+       notice without a separate file. -->
+  <ItemGroup>
+    <EmbeddedResource Include="../../LICENSE" LogicalName="LICENSE" />
+    <EmbeddedResource Include="../../THIRD-PARTY-NOTICES.md" LogicalName="THIRD-PARTY-NOTICES" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Sleepy.Core.Tests" />
+  </ItemGroup>
+
+</Project>

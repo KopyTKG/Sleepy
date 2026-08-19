@@ -1,0 +1,182 @@
+{
+  "__export_date": "2020-01-01T00:00:00Z",
+  "__export_format": 4,
+  "__export_source": "sleepy:fixture",
+  "_type": "export",
+  "resources": [
+    {
+      "_id": "wrk_sleepy",
+      "_type": "workspace",
+      "description": "",
+      "name": "Fixture API",
+      "parentId": null,
+      "scope": "collection"
+    },
+    {
+      "_id": "env_sleepy_base",
+      "_type": "environment",
+      "data": {
+        "baseUrl": "",
+        "bearer": ""
+      },
+      "name": "Base Environment",
+      "parentId": "wrk_sleepy"
+    },
+    {
+      "_id": "fld_nodes",
+      "_type": "request_group",
+      "name": "Nodes",
+      "parentId": "wrk_sleepy"
+    },
+    {
+      "_id": "fld_users",
+      "_type": "request_group",
+      "name": "Users",
+      "parentId": "wrk_sleepy"
+    },
+    {
+      "_id": "fld_default",
+      "_type": "request_group",
+      "name": "default",
+      "parentId": "wrk_sleepy"
+    },
+    {
+      "_id": "fld_zeta",
+      "_type": "request_group",
+      "name": "zeta",
+      "parentId": "wrk_sleepy"
+    },
+    {
+      "_id": "req_cycle",
+      "_type": "request",
+      "authentication": {
+        "token": "{{ _.bearer }}",
+        "type": "bearer"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"child\": null,\n  \"name\": \"\"\n}"
+      },
+      "description": "",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "method": "POST",
+      "name": "POST /cycles",
+      "parameters": [],
+      "parentId": "fld_default",
+      "url": "{{ _.baseUrl }}/cycles"
+    },
+    {
+      "_id": "req_putnode",
+      "_type": "request",
+      "authentication": {
+        "token": "{{ _.bearer }}",
+        "type": "bearer"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"active\": false,\n  \"age\": 0,\n  \"born\": \"2020-01-01\",\n  \"created\": \"2020-01-01T00:00:00Z\",\n  \"extra\": false,\n  \"id\": \"00000000-0000-0000-0000-000000000000\",\n  \"kind\": 0,\n  \"meta\": {\n    \"a\": 1,\n    \"b\": [\n      true,\n      null,\n      1.5\n    ]\n  },\n  \"role\": \"admin\",\n  \"score\": 0,\n  \"tags\": [\n    \"\"\n  ]\n}"
+      },
+      "description": "",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "method": "PUT",
+      "name": "PUT /nodes",
+      "parameters": [],
+      "parentId": "fld_nodes",
+      "url": "{{ _.baseUrl }}/nodes"
+    },
+    {
+      "_id": "req_create_user",
+      "_type": "request",
+      "authentication": {
+        "token": "{{ _.bearer }}",
+        "type": "bearer"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"active\": false,\n  \"age\": 0,\n  \"born\": \"2020-01-01\",\n  \"created\": \"2020-01-01T00:00:00Z\",\n  \"id\": \"00000000-0000-0000-0000-000000000000\",\n  \"kind\": 0,\n  \"meta\": {\n    \"a\": 1,\n    \"b\": [\n      true,\n      null,\n      1.5\n    ]\n  },\n  \"role\": \"admin\",\n  \"score\": 0,\n  \"tags\": [\n    \"\"\n  ]\n}"
+      },
+      "description": "",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "method": "POST",
+      "name": "POST /users",
+      "parameters": [],
+      "parentId": "fld_users",
+      "url": "{{ _.baseUrl }}/users"
+    },
+    {
+      "_id": "req_patch_users",
+      "_type": "request",
+      "authentication": {
+        "token": "{{ _.bearer }}",
+        "type": "bearer"
+      },
+      "body": {},
+      "description": "",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "method": "PATCH",
+      "name": "PATCH /users",
+      "parameters": [],
+      "parentId": "fld_zeta",
+      "url": "{{ _.baseUrl }}/users"
+    },
+    {
+      "_id": "req_getuser",
+      "_type": "request",
+      "authentication": {
+        "token": "{{ _.bearer }}",
+        "type": "bearer"
+      },
+      "body": {},
+      "description": "Get one user",
+      "headers": [],
+      "method": "GET",
+      "name": "GET /users/{id}",
+      "parameters": [
+        {
+          "description": "expand relations",
+          "disabled": false,
+          "name": "expand",
+          "value": ""
+        }
+      ],
+      "parentId": "fld_users",
+      "url": "{{ _.baseUrl }}/users/{id}"
+    },
+    {
+      "_id": "req_delete_users_id",
+      "_type": "request",
+      "authentication": {
+        "token": "{{ _.bearer }}",
+        "type": "bearer"
+      },
+      "body": {},
+      "description": "Remove a user",
+      "headers": [],
+      "method": "DELETE",
+      "name": "DELETE /users/{id}",
+      "parameters": [],
+      "parentId": "fld_default",
+      "url": "{{ _.baseUrl }}/users/{id}"
+    }
+  ]
+}

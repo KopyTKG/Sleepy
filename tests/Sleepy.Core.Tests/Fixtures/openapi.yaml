@@ -1,0 +1,98 @@
+openapi: "3.0.1"
+info:
+  title: Fixture API
+  version: "1.0"
+paths:
+  /users/{id}:
+    get:
+      tags: [Users]
+      operationId: getUser
+      summary: Get one user
+      parameters:
+        - name: expand
+          in: query
+          description: expand relations
+        - name: id
+          in: path
+    delete:
+      description: Remove a user
+  /users:
+    post:
+      tags: [Users, Admin]
+      operationId: "create user!!"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+    patch:
+      tags: [zeta]
+      requestBody:
+        content:
+          application/xml:
+            schema:
+              type: string
+  /nodes:
+    put:
+      tags: [Nodes]
+      operationId: putNode
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/User"
+                - type: object
+                  properties:
+                    extra:
+                      type: boolean
+  /cycles:
+    post:
+      operationId: cycle
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Node"
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        created:
+          type: string
+          format: date-time
+        born:
+          type: string
+          format: date
+        age:
+          type: integer
+        score:
+          type: number
+        active:
+          type: boolean
+        role:
+          type: string
+          enum: [admin, user]
+        meta:
+          example:
+            a: 1
+            b: [true, null, 1.5]
+        tags:
+          type: array
+          items:
+            type: string
+        kind:
+          oneOf:
+            - type: integer
+            - type: string
+    Node:
+      type: object
+      properties:
+        child:
+          $ref: "#/components/schemas/Node"
+        name:
+          type: string
