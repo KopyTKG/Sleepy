@@ -1,9 +1,14 @@
 # GitLab CI for sleepy.
 #
-# - `build` compiles an optimized Linux binary on every push/tag.
-# - On a tag (e.g. `v1.0.0`) the binary is uploaded to the project's generic
-#   package registry, and a GitLab Release is created with that binary attached
-#   as a downloadable asset.
+# These jobs mirror the justfile: `just ci` runs lint + build + test + package
+# locally, with the same commands used here.
+#
+# - `lint` and `test` run on every push/tag, before anything is built.
+# - `cli:linux` compiles the Native AOT CLI binary on every push/tag.
+# - `gui:linux` / `gui:windows` publish the Uno Platform desktop app. Both are
+#   built on a Linux runner: the Skia desktop head cross-compiles to win-x64.
+# - On a tag (e.g. `v1.0.0`) every artifact is uploaded to the project's generic
+#   package registry and a GitLab Release links to them.
 #
 # NOTE: verify against your GitLab version — the generic-packages API and the
 # `release-cli` / `release:` syntax below match current GitLab (16.x+). Older
@@ -11,63 +16,115 @@
 # `CI_COMMIT_TAG` are predefined CI variables and need no configuration.
 
 stages:
+  - check
   - build
   - release
 
 variables:
-  # Version of the Odin nightly to install. Adjust as needed.
-  ODIN_REF: "dev-2026-06"
-  BINARY_NAME: "sleepy"
-  # Name of the generic package the binary is published under.
   PACKAGE_NAME: "sleepy"
+  DOTNET_NOLOGO: "1"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
+  NUGET_PACKAGES: "$CI_PROJECT_DIR/.nuget"
 
-# Reusable setup: install Odin (needs clang + LLVM) into $CI_PROJECT_DIR/odin.
-.install_odin: &install_odin
-  - apt-get update -y
-  - apt-get install -y git make clang llvm
-  - git clone --depth 1 https://github.com/odin-lang/Odin.git "$CI_PROJECT_DIR/odin"
-  - (cd "$CI_PROJECT_DIR/odin" && make release-native)
-  - export PATH="$CI_PROJECT_DIR/odin:$PATH"
-  - odin version
-
-build:
-  stage: build
-  image: ubuntu:24.04
-  before_script:
-    - *install_odin
-  script:
-    - odin build . -out:$BINARY_NAME -o:speed -no-bounds-check
-    - ./$BINARY_NAME -h || true
-  artifacts:
+.dotnet:
+  image: mcr.microsoft.com/dotnet/sdk:10.0
+  cache:
+    key: nuget-$CI_COMMIT_REF_SLUG
     paths:
-      - $BINARY_NAME
+      - .nuget/
+
+lint:
+  extends: .dotnet
+  stage: check
+  script:
+    - dotnet format --verify-no-changes
+
+test:
+  extends: .dotnet
+  stage: check
+  script:
+    - dotnet test tests/Sleepy.Core.Tests/Sleepy.Core.Tests.csproj -c Release --nologo --logger "junit;LogFilePath=$CI_PROJECT_DIR/test-results.xml"
+  artifacts:
+    when: always
+    reports:
+      junit: test-results.xml
     expire_in: 1 week
 
-# Upload the binary (built in the `build` stage) to the generic package
-# registry, then cut a Release that links to it. Only runs on tags.
-#
-# This job uses the official release-cli image, which is required for the
-# `release:` keyword below. It consumes the `build` job's artifact instead of
-# recompiling, so no Odin toolchain is needed here.
+# Native AOT command line tool. AOT links with clang and needs the zlib headers.
+cli:linux:
+  extends: .dotnet
+  stage: build
+  before_script:
+    - apt-get update -y
+    - apt-get install -y --no-install-recommends clang zlib1g-dev
+  script:
+    - dotnet publish src/Sleepy.Cli/Sleepy.Cli.csproj -c Release -r linux-x64 -o publish/cli
+    - ./publish/cli/sleepy --version
+    - ./publish/cli/sleepy -h || true
+    - cp publish/cli/sleepy ./sleepy
+  artifacts:
+    paths:
+      - sleepy
+    expire_in: 1 week
+
+# The published folder carries the X11 / Wayland / console launchers, the
+# desktop entries, and install.sh alongside the binary.
+gui:linux:
+  extends: .dotnet
+  stage: build
+  script:
+    - dotnet publish src/Sleepy.Gui/Sleepy.Gui.csproj -c Release -f net10.0-desktop -r linux-x64 --self-contained -o publish/gui-linux
+    - tar -czf sleepy-gui-linux-x64.tar.gz -C publish/gui-linux .
+  artifacts:
+    paths:
+      - sleepy-gui-linux-x64.tar.gz
+    expire_in: 1 week
+
+gui:windows:
+  extends: .dotnet
+  stage: build
+  script:
+    - dotnet publish src/Sleepy.Gui/Sleepy.Gui.csproj -c Release -f net10.0-desktop -r win-x64 --self-contained -o publish/gui-win
+    - cd publish/gui-win && zip -qr ../../sleepy-gui-win-x64.zip . && cd ../..
+  before_script:
+    - apt-get update -y
+    - apt-get install -y --no-install-recommends zip
+  artifacts:
+    paths:
+      - sleepy-gui-win-x64.zip
+    expire_in: 1 week
+
+# Upload the artifacts built above to the generic package registry, then cut a
+# Release that links to them. Only runs on tags.
 release:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   needs:
-    - job: build
+    - job: cli:linux
+      artifacts: true
+    - job: gui:linux
+      artifacts: true
+    - job: gui:windows
       artifacts: true
   rules:
     - if: "$CI_COMMIT_TAG"
   script:
-    # Upload the artifact to the project's generic package registry.
     - |
-      curl --fail --header "JOB-TOKEN: $CI_JOB_TOKEN" \
-        --upload-file "./$BINARY_NAME" \
-        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${PACKAGE_NAME}/${CI_COMMIT_TAG}/${BINARY_NAME}"
+      for asset in sleepy sleepy-gui-linux-x64.tar.gz sleepy-gui-win-x64.zip; do
+        curl --fail --header "JOB-TOKEN: $CI_JOB_TOKEN" \
+          --upload-file "./$asset" \
+          "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${PACKAGE_NAME}/${CI_COMMIT_TAG}/${asset}"
+      done
   release:
     tag_name: "$CI_COMMIT_TAG"
     name: "sleepy $CI_COMMIT_TAG"
-    description: "Automated release of sleepy $CI_COMMIT_TAG (Linux x86_64 binary)."
+    description: "Automated release of sleepy $CI_COMMIT_TAG (CLI + desktop app)."
     assets:
       links:
-        - name: "$BINARY_NAME (linux-x86_64)"
-          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${PACKAGE_NAME}/${CI_COMMIT_TAG}/${BINARY_NAME}"
+        - name: "sleepy CLI (linux-x64)"
+          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${PACKAGE_NAME}/${CI_COMMIT_TAG}/sleepy"
+        - name: "sleepy-GUI (linux-x64)"
+          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${PACKAGE_NAME}/${CI_COMMIT_TAG}/sleepy-gui-linux-x64.tar.gz"
+        - name: "sleepy-GUI (win-x64)"
+          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${PACKAGE_NAME}/${CI_COMMIT_TAG}/sleepy-gui-win-x64.zip"

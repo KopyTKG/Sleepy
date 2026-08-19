@@ -1,0 +1,219 @@
+<Page x:Class="Sleepy.Gui.MainPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:local="using:Sleepy.Gui"
+      xmlns:services="using:Sleepy.Gui.Services"
+      Background="{StaticResource SurfaceBrush}">
+
+  <Page.Resources>
+    <services:BoolToVisibilityConverter x:Key="BoolToVisibility" />
+    <services:BoolToBrushConverter x:Key="StatusBrush" />
+  </Page.Resources>
+
+  <!-- The whole window accepts a dropped spec. -->
+  <Grid x:Name="RootGrid" AllowDrop="True" DragOver="OnDragOver" Drop="OnDrop" DragLeave="OnDragLeave">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="460" />
+      <ColumnDefinition Width="*" />
+    </Grid.ColumnDefinitions>
+
+    <!-- ============================ left: controls ======================= -->
+    <ScrollViewer Grid.Row="0" Grid.Column="0" Padding="28,20,28,20"
+                  HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="18" HorizontalAlignment="Stretch">
+
+        <!-- Spec source -->
+        <StackPanel Spacing="10">
+          <Grid>
+            <TextBlock x:Uid="SpecSourceHeader" Text="SPEC SOURCE" Style="{StaticResource SectionHeaderStyle}"
+                       VerticalAlignment="Center" />
+            <ToggleButton x:Name="FetchOptionsToggle" x:Uid="FetchOptionsToggle"
+                          HorizontalAlignment="Right" Padding="6,2" MinWidth="0"
+                          Background="Transparent" BorderThickness="0"
+                          Content="Fetch options ▾" FontSize="11"
+                          Foreground="{StaticResource SecondaryTextBrush}" />
+          </Grid>
+
+          <TextBox x:Name="InputBox" x:Uid="InputBox" PlaceholderText="path, spec URL, or Swagger UI URL"
+                   Text="{Binding InputText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                   KeyDown="OnInputKeyDown" />
+
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button x:Uid="LoadButton" Content="Load" Click="OnLoadClick" MinWidth="62"
+                    Style="{StaticResource AccentButtonStyle}" />
+            <Button x:Uid="BrowseButton" Content="Browse…" Click="OnBrowseClick" />
+            <ProgressRing IsActive="{Binding IsBusy}" Width="18" Height="18"
+                          VerticalAlignment="Center"
+                          Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" />
+          </StackPanel>
+
+          <TextBlock x:Uid="SourceHint" Style="{StaticResource HintTextStyle}"
+                     Text="openapi.json · swagger.yaml · a Swagger UI URL — or drop a file anywhere" />
+
+          <!-- Fetch options, folded away until asked for -->
+          <StackPanel Spacing="8" Margin="0,4,0,0"
+                      Visibility="{Binding IsChecked, ElementName=FetchOptionsToggle, Converter={StaticResource BoolToVisibility}}">
+            <StackPanel>
+              <TextBlock x:Uid="RequestHeaderLabel" Text="Request header" Style="{StaticResource FieldLabelStyle}" />
+              <TextBox x:Uid="RequestHeaderBox" PlaceholderText="Authorization: Bearer …"
+                       Text="{Binding RequestHeader, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            </StackPanel>
+            <CheckBox x:Uid="IgnoreTlsCheckBox" Content="Ignore TLS certificate errors" FontSize="12"
+                      MinWidth="0"
+                      IsChecked="{Binding IgnoreCertificateErrors, Mode=TwoWay}" />
+          </StackPanel>
+        </StackPanel>
+
+        <!-- Modules, only when the source serves more than one -->
+        <StackPanel Spacing="10"
+                    Visibility="{Binding HasSeveralModules, Converter={StaticResource BoolToVisibility}}">
+          <Border Height="1" Background="{StaticResource DividerBrush}" />
+          <Grid>
+            <TextBlock x:Uid="ModulesHeader" Text="MODULES" Style="{StaticResource SectionHeaderStyle}"
+                       VerticalAlignment="Center" />
+            <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right">
+              <Button x:Uid="SelectAllButton" Content="All" Click="OnSelectAllClick" Padding="8,2" FontSize="11" />
+              <Button x:Uid="SelectNoneButton" Content="None" Click="OnSelectNoneClick" Padding="8,2" FontSize="11" />
+            </StackPanel>
+          </Grid>
+          <ItemsControl ItemsSource="{Binding Modules}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" MinHeight="26"
+                          Checked="OnModuleToggled" Unchecked="OnModuleToggled">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="{Binding Name}" FontSize="13" />
+                    <TextBlock Text="{Binding Details}" FontSize="11" VerticalAlignment="Center"
+                               Foreground="{StaticResource MutedTextBrush}" />
+                  </StackPanel>
+                </CheckBox>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+
+        <!-- Output -->
+        <StackPanel Spacing="12">
+          <Border Height="1" Background="{StaticResource DividerBrush}" />
+          <TextBlock x:Uid="OutputHeader" Text="OUTPUT" Style="{StaticResource SectionHeaderStyle}" />
+
+          <StackPanel>
+            <TextBlock x:Uid="FolderLayoutLabel" Text="Folder layout" Style="{StaticResource FieldLabelStyle}" />
+            <ComboBox HorizontalAlignment="Stretch" SelectedIndex="{Binding LayoutIndex, Mode=TwoWay}">
+              <ComboBoxItem x:Uid="LayoutNestedItem" Content="Module folders, tag subfolders" />
+              <ComboBoxItem x:Uid="LayoutFlatItem" Content="Flat “Module / Tag” folders" />
+              <ComboBoxItem x:Uid="LayoutModuleOnlyItem" Content="Module folders only" />
+            </ComboBox>
+          </StackPanel>
+
+          <StackPanel>
+            <TextBlock x:Uid="WorkspaceNameLabel" Text="Workspace name" Style="{StaticResource FieldLabelStyle}" />
+            <TextBox x:Uid="WorkspaceNameBox" PlaceholderText="defaults to the spec title"
+                     Text="{Binding WorkspaceName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+          </StackPanel>
+
+          <StackPanel>
+            <TextBlock x:Uid="BaseUrlLabel" Text="Base URL" Style="{StaticResource FieldLabelStyle}" />
+            <TextBox x:Uid="BaseUrlBox" PlaceholderText="https://api.example.com"
+                     Text="{Binding BaseUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+          </StackPanel>
+
+          <StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="5">
+              <TextBlock x:Uid="BearerTokenLabel" Text="Bearer token" Style="{StaticResource FieldLabelStyle}" />
+              <TextBlock x:Uid="BearerOptionalLabel" Text="(optional)" Style="{StaticResource FieldLabelStyle}"
+                         Foreground="{StaticResource MutedTextBrush}" />
+            </StackPanel>
+            <TextBox x:Uid="BearerTokenBox" PlaceholderText="prefills the bearer environment variable"
+                     Text="{Binding BearerToken, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+          </StackPanel>
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,2,0,0"
+                    Visibility="{Binding HasResult, Converter={StaticResource BoolToVisibility}}">
+          <Button x:Uid="SaveButton" Content="Save export…" Click="OnSaveClick" Style="{StaticResource AccentButtonStyle}" />
+          <Button x:Uid="CopyButton" Content="Copy JSON" Click="OnCopyClick" />
+        </StackPanel>
+
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- ============================ right: preview ======================= -->
+    <Border Grid.Row="0" Grid.Column="1" Background="{StaticResource PreviewSurfaceBrush}"
+            BorderBrush="{StaticResource DividerBrush}" BorderThickness="1,0,0,0">
+      <Grid>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Padding="20,18,20,12">
+          <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+            <TextBlock x:Uid="PreviewHeader" Text="PREVIEW" Style="{StaticResource SectionHeaderStyle}" />
+            <TextBlock Text="{Binding OutputFileName}" FontSize="12" FontFamily="Consolas, monospace"
+                       Foreground="{StaticResource MutedTextBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right"
+                      VerticalAlignment="Center"
+                      Visibility="{Binding HasResult, Converter={StaticResource BoolToVisibility}}">
+            <Ellipse Width="7" Height="7" Fill="{StaticResource SuccessBrush}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Summary}" FontSize="12"
+                       Foreground="{StaticResource SecondaryTextBrush}" />
+          </StackPanel>
+        </Grid>
+
+        <TextBox Grid.Row="1" Text="{Binding Preview}" IsReadOnly="True" AcceptsReturn="True"
+                 Padding="20,0,20,20" FontFamily="Consolas, monospace" FontSize="12.5"
+                 Background="Transparent" BorderThickness="0" TextWrapping="NoWrap"
+                 Foreground="{StaticResource CodeTextBrush}"
+                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                 Visibility="{Binding HasResult, Converter={StaticResource BoolToVisibility}}" />
+
+        <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="6"
+                    Visibility="{Binding HasResult, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
+          <TextBlock x:Uid="EmptyPreviewTitle" Text="Nothing loaded yet" FontSize="15" HorizontalAlignment="Center"
+                     Foreground="{StaticResource SecondaryTextBrush}" />
+          <TextBlock x:Uid="EmptyPreviewHint" Text="Drop a spec anywhere in this window" HorizontalAlignment="Center"
+                     Style="{StaticResource HintTextStyle}" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- ============================ status bar ========================== -->
+    <Border Grid.Row="1" Grid.ColumnSpan="2" Background="{StaticResource StatusBarBrush}"
+            BorderBrush="{StaticResource DividerBrush}" BorderThickness="0,1,0,0" Padding="16,7">
+      <Grid ColumnSpacing="12">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Ellipse Width="7" Height="7" VerticalAlignment="Center"
+                   Fill="{Binding IsError, Converter={StaticResource StatusBrush}}" />
+          <TextBlock Text="{Binding Status}" FontSize="12" TextTrimming="CharacterEllipsis"
+                     Foreground="{StaticResource SecondaryTextBrush}" />
+        </StackPanel>
+
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+          <Button x:Uid="AboutButton" Content="About" Click="OnAboutClick" Padding="10,3"
+                  FontSize="12" MinWidth="0" Background="Transparent" BorderThickness="0"
+                  Foreground="{StaticResource SecondaryTextBrush}" VerticalAlignment="Center" />
+          <ComboBox x:Name="LanguagePicker" MinHeight="28" MinWidth="150"
+                    FontSize="12" SelectionChanged="OnLanguageChanged">
+            <ComboBoxItem x:Uid="LanguageSystemItem" Content="System language" />
+            <ComboBoxItem Content="English" />
+            <ComboBoxItem Content="Čeština" />
+          </ComboBox>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+  </Grid>
+</Page>

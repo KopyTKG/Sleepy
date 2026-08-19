@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Sleepy.Cli/Sleepy.Cli.csproj" />
+    <Project Path="src/Sleepy.Core/Sleepy.Core.csproj" />
+    <Project Path="src/Sleepy.Gui/Sleepy.Gui.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Sleepy.Core.Tests/Sleepy.Core.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,15 @@
+<Project ToolsVersion="15.0">
+
+  <!--
+    Uno packages are versioned by the Uno.Sdk entry in global.json, not here.
+    See https://aka.platform.uno/using-uno-sdk#implicit-packages
+  -->
+  <ItemGroup>
+    <PackageVersion Include="YamlDotNet" Version="16.3.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.0" />
+    <PackageVersion Include="JUnitXml.TestLogger" Version="6.1.0" />
+  </ItemGroup>
+
+</Project>
