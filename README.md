@@ -292,9 +292,9 @@ zlib headers (`apt-get install clang zlib1g-dev` on Debian/Ubuntu). Swap
 target OS. The desktop app has no such restriction and cross-publishes from
 Linux to Windows.
 
-CI (`.gitlab-ci.yml`) mirrors this: a `check` stage running lint and tests, a
-`build` stage publishing the CLI and both desktop builds, and a tag-triggered
-release that uploads all three.
+CI (`.gitlab-ci.yml`) runs lint and the tests on every push. The three publish
+jobs and the release itself only run for a tag, so branch pipelines stay quick
+and the binaries are built once, for the release that ships them.
 
 ### Tests
 

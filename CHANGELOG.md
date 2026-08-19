@@ -35,7 +35,8 @@ Rewritten from Odin to C#. Single-spec output is byte-identical to 0.2.0.
 - The CLI fetches over HTTP directly; `curl` is no longer required.
 - JSON parse errors report what the parser actually found, instead of an
   internal error name.
-- CI gained lint and test stages and publishes the CLI plus both desktop builds.
+- CI gained lint and test stages; the CLI and both desktop builds are published
+  from tags, which is also when the release is cut.
 
 ### Removed
 
