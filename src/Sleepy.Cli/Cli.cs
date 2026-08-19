@@ -30,6 +30,7 @@ internal enum ParseResult
     Ok,
     Usage,
     Version,
+    License,
     Error,
 }
 
@@ -139,6 +140,9 @@ internal static class Cli
                 case "--version":
                     return ParseResult.Version;
 
+                case "--license":
+                    return ParseResult.License;
+
                 default:
                     inputs.Add(args[i]);
                     break;
@@ -204,5 +208,6 @@ internal static class Cli
         Console.Error.WriteLine("      --list            list the discovered modules and exit");
         Console.Error.WriteLine("  -h, --help            show this help");
         Console.Error.WriteLine("  -v, --version         show the version");
+        Console.Error.WriteLine("      --license         show the licence and third-party notices");
     }
 }

@@ -20,6 +20,9 @@ internal static class Program
             case ParseResult.Version:
                 Console.WriteLine(Version);
                 return 0;
+            case ParseResult.License:
+                WriteLicense();
+                return 0;
             case ParseResult.Error:
                 Cli.WriteUsage();
                 return 2;
@@ -54,6 +57,15 @@ internal static class Program
             Console.Error.WriteLine($"error: {exception.Message}");
             return 1;
         }
+    }
+
+    private static void WriteLicense()
+    {
+        Console.WriteLine($"sleepy {Version} — {SleepyInfo.LicenseName}");
+        Console.WriteLine();
+        Console.WriteLine(SleepyInfo.License);
+        Console.WriteLine();
+        Console.WriteLine(SleepyInfo.ThirdPartyNotices);
     }
 
     private static async Task<int> RunAsync(Options options)

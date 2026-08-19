@@ -52,6 +52,7 @@ sleepy <spec|url|-> [<spec|url> ...] [options]
 | `-H`, `--header <h>` | extra request header when fetching, e.g. `"Authorization: Bearer x"`; repeatable |
 | `-k`, `--insecure` | do not verify TLS certificates when fetching |
 | `--list` | print the discovered modules and exit |
+| `--license` | print the licence and third-party notices |
 | `-h`, `--help` / `-v`, `--version` | help / version |
 
 - Each input may be a **file path**, an **http(s) URL**, or `-` for **stdin**,
@@ -336,3 +337,18 @@ comments in JSON input are tolerated.
 Only local `$ref`s (`#/...`) are resolved — remote and file references are not
 followed. OpenAPI `servers` entries are ignored: a request URL is
 `{{ _.baseUrl }}` plus the raw path from the spec.
+
+## Contributing
+
+Bug reports are most useful with the specification that triggered them; see
+[CONTRIBUTING.md](CONTRIBUTING.md) for the development loop, the golden-fixture
+workflow, and how to add a translation. Release notes live in
+[CHANGELOG.md](CHANGELOG.md).
+
+## Licence
+
+[BSD 3-Clause](LICENSE) — Copyright (c) 2026 Martin Kopecký.
+
+The licence and the [third-party notices](THIRD-PARTY-NOTICES.md) are embedded
+in the binaries rather than shipped beside them: `sleepy --license` prints both,
+and sleepy-GUI shows them under **About** in the status bar.

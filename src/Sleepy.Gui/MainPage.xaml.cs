@@ -173,6 +173,48 @@ public sealed partial class MainPage : Page
         ViewModel.SetStatus("Export copied to the clipboard.");
     }
 
+    /// <summary>
+    /// Shows the licence the app is distributed under, plus the notices of the
+    /// components that ship with it. Embedding them here is what carries the
+    /// notice into a redistributed binary.
+    /// </summary>
+    private async void OnAboutClick(object sender, RoutedEventArgs e)
+    {
+        var body = new StackPanel { Spacing = 12 };
+
+        body.Children.Add(new TextBlock
+        {
+            Text = $"sleepy {SleepyInfo.Version}",
+            FontSize = 18,
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+        });
+        body.Children.Add(new TextBlock
+        {
+            Text = $"{SleepyInfo.Copyright}\n{SleepyInfo.LicenseName}",
+            TextWrapping = TextWrapping.Wrap,
+        });
+        body.Children.Add(new TextBox
+        {
+            Text = $"{SleepyInfo.License}\n\n{SleepyInfo.ThirdPartyNotices}",
+            IsReadOnly = true,
+            AcceptsReturn = true,
+            TextWrapping = TextWrapping.Wrap,
+            FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Consolas, monospace"),
+            FontSize = 11.5,
+            Height = 360,
+        });
+
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            Title = Localizer.Get("About_Title"),
+            CloseButtonText = Localizer.Get("About_Close"),
+            Content = new ScrollViewer { Content = body, MaxWidth = 620 },
+        };
+
+        await dialog.ShowAsync();
+    }
+
     private void OnSelectAllClick(object sender, RoutedEventArgs e) => ViewModel.SelectAllModules(true);
 
     private void OnSelectNoneClick(object sender, RoutedEventArgs e) => ViewModel.SelectAllModules(false);

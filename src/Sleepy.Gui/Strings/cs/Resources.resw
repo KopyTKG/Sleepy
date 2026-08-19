@@ -276,4 +276,13 @@
   <data name="Preview_Truncated" xml:space="preserve">
     <value>… zkrácený náhled …</value>
   </data>
+  <data name="AboutButton.Content" xml:space="preserve">
+    <value>O aplikaci</value>
+  </data>
+  <data name="About_Title" xml:space="preserve">
+    <value>O aplikaci sleepy</value>
+  </data>
+  <data name="About_Close" xml:space="preserve">
+    <value>Zavřít</value>
+  </data>
 </root>
