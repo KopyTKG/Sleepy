@@ -6,31 +6,19 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
-### Fixed
-
-- Discover modules on Swagger UI deployments that keep their configuration in
-  `index.js` rather than `swagger-ui-init.js`: the page's own `<script src=…>`
-  tags are now followed, so the packaging no longer matters.
-- Probe for a Swagger UI when the given URL itself serves nothing, so a bare
-  host works. A URL naming a document (`.json`, `.yaml`, `.yml`) still fails
-  outright instead of quietly converting something else.
-
-### Changed
-
-- Modules that declare no paths are left out of the export instead of adding an
-  empty folder.
-
-## [0.5.0] — 2026-08-19
+## [0.5.0] — 2026-08-21
 
 Rewritten from Odin to C#. Single-spec output is byte-identical to 0.2.0.
 
 ### Added
 
 - **Multi-module APIs.** A URL may point at a Swagger UI serving several
-  definitions rather than at one document. The module list is read from
-  Swashbuckle's `swagger-ui-init.js`, springdoc's `swagger-config`, springfox's
-  `swagger-resources`, or a hand-written manifest, and every module is merged
-  into one collection with module-prefixed resource ids.
+  definitions rather than at one document. The module list is found by following
+  the page's own script tags, or read from springdoc's `swagger-config`,
+  springfox's `swagger-resources`, or a hand-written manifest; every module is
+  then merged into one collection with module-prefixed resource ids. Modules
+  that declare no paths are left out rather than contributing an empty folder,
+  and a URL that serves nothing falls through to probing, so a bare host works.
 - **YAML input** alongside JSON, detected from the content and file extension.
 - **`sleepy-GUI`**, a desktop app (Uno Platform) for Linux and Windows: drop a
   spec anywhere in the window, tune the output, watch the preview, save. English
@@ -39,6 +27,10 @@ Rewritten from Odin to C#. Single-spec output is byte-identical to 0.2.0.
   entries, and an installer; the host can be forced with `--display`.
 - New CLI options: `--module`, `--list`, `--flat`, `--no-tags`, `--bearer`,
   `--name`, `--header`, `--insecure`, `--license`; several inputs at once.
+- Build identity: the version is written once, in `Directory.Build.props`, and
+  the commit is stamped into it, so `sleepy --version`, the GUI status bar, and
+  the About dialog all report something like `0.5.0+c5fac9f` — traceable back to
+  the source it was built from.
 - Test suite covering the engine, including a golden export fixture that locks
   the output format down byte for byte.
 - `mise.toml` and a `justfile` covering build, test, publish, and release.
