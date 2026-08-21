@@ -6,6 +6,20 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- Discover modules on Swagger UI deployments that keep their configuration in
+  `index.js` rather than `swagger-ui-init.js`: the page's own `<script src=…>`
+  tags are now followed, so the packaging no longer matters.
+- Probe for a Swagger UI when the given URL itself serves nothing, so a bare
+  host works. A URL naming a document (`.json`, `.yaml`, `.yml`) still fails
+  outright instead of quietly converting something else.
+
+### Changed
+
+- Modules that declare no paths are left out of the export instead of adding an
+  empty folder.
+
 ## [0.5.0] — 2026-08-19
 
 Rewritten from Odin to C#. Single-spec output is byte-identical to 0.2.0.

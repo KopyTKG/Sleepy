@@ -73,6 +73,13 @@ public static class InsomniaBuilder
             var moduleSlug = multiModule ? Slug.Make(module.Name) : string.Empty;
             var operations = CollectOperations(module.Spec);
 
+            // A module that declares no paths would only contribute an empty
+            // folder; several real APIs ship placeholder modules like that.
+            if (multiModule && operations.Count == 0)
+            {
+                continue;
+            }
+
             var tags = operations.Select(operation => operation.Tag).Distinct().ToList();
             tags.Sort(StringComparer.Ordinal);
 

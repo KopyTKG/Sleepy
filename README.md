@@ -105,11 +105,19 @@ sleepy reads the module list from any of these:
 | `/swagger-resources` | springfox: `[{"name":…,"location":…}]` |
 | a manifest you write | the same `{"urls":[{"name":…,"url":…}]}` JSON, with URLs or paths relative to the manifest |
 
-Given a URL that is not itself a document, it probes `swagger-ui-init.js`,
-`swagger/v1/swagger.json`, `v3/api-docs/swagger-config`, `swagger-config`, and
-`swagger-resources`, against both the URL's directory and the site root — so
-`https://host:12000`, `https://host:12000/swagger/index.html`, and
-`https://host:12000/swagger/index.html?urls.primaryName=Admin` all work.
+Given a URL that is not itself a document, sleepy follows the page's own
+`<script src=…>` tags — which file holds the configuration differs between
+Swagger UI packagings (`index.js`, `swagger-ui-init.js`, a bundled app script) —
+and then probes `swagger-ui-init.js`, `index.js`, `swagger/v1/swagger.json`,
+`v3/api-docs/swagger-config`, `swagger-config`, and `swagger-resources` against
+both the URL's directory and the site root. So `https://host:12000`,
+`https://host:12000/swagger/`, `https://host:12000/swagger/index.html`, and
+`https://host:12000/swagger/index.html?urls.primaryName=Admin` all work, while a
+URL naming a document that is not there fails instead of silently converting
+something else.
+
+Modules that declare no paths are left out rather than contributing an empty
+folder.
 
 Module names come from the dropdown (falling back to `info.title`), and resource
 ids carry the module slug, so two modules exposing the same `operationId` never

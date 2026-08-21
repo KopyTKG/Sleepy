@@ -160,6 +160,54 @@ public class DiscoveryTests : IDisposable
     }
 
     [Fact]
+    public async Task FollowsTheScriptTagsOfAPageToFindTheModuleList()
+    {
+        // Swagger UI's static bundle keeps the configuration in index.js rather
+        // than in swagger-ui-init.js.
+        using var server = new SwaggerServer(new Dictionary<string, (string, string)>
+        {
+            ["/swagger/index.html"] = (
+                """<html><body><script src="./swagger-ui-bundle.js"></script><script src="index.js"></script></body></html>""",
+                "text/html"),
+            ["/swagger/swagger-ui-bundle.js"] = ("/* no configuration here */", "text/javascript"),
+            ["/swagger/index.js"] = (InitScript, "text/javascript"),
+            ["/swagger/Admin/swagger.json"] = (AdminSpec, "application/json"),
+            ["/swagger/Workflow/swagger.json"] = (WorkflowSpec, "application/json"),
+        });
+
+        var modules = await ExpandAsync($"{server.Prefix}/swagger/index.html");
+
+        Assert.Equal(["Admin", "Workflow"], modules.Select(module => module.Name));
+    }
+
+    [Fact]
+    public async Task ProbesOnWhenTheEntryPointItselfDoesNotServeAnything()
+    {
+        // A bare host commonly 404s while its Swagger UI sits a level down.
+        using var server = new SwaggerServer(new Dictionary<string, (string, string)>
+        {
+            ["/swagger/swagger-ui-init.js"] = (InitScript, "text/javascript"),
+            ["/swagger/Admin/swagger.json"] = (AdminSpec, "application/json"),
+            ["/swagger/Workflow/swagger.json"] = (WorkflowSpec, "application/json"),
+        });
+
+        var modules = await ExpandAsync(server.Prefix);
+
+        Assert.Equal(["Admin", "Workflow"], modules.Select(module => module.Name));
+    }
+
+    [Fact]
+    public async Task KeepsAMissingDocumentFatalInsteadOfProbing()
+    {
+        using var server = new SwaggerServer(SwashbuckleRoutes());
+
+        var error = await Assert.ThrowsAsync<SleepyException>(
+            () => ExpandAsync($"{server.Prefix}/openapi.json"));
+
+        Assert.Contains("404", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task RejectsAPageThatListsNothing()
     {
         using var server = new SwaggerServer(new Dictionary<string, (string, string)>
