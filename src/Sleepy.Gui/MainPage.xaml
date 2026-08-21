@@ -8,6 +8,8 @@
   <Page.Resources>
     <services:BoolToVisibilityConverter x:Key="BoolToVisibility" />
     <services:BoolToBrushConverter x:Key="StatusBrush" />
+    <services:InvertBoolConverter x:Key="InvertBool" />
+    <services:BoolToOpacityConverter x:Key="EnabledOpacity" />
   </Page.Resources>
 
   <!-- The whole window accepts a dropped spec. -->
@@ -41,12 +43,15 @@
 
           <TextBox x:Name="InputBox" x:Uid="InputBox" PlaceholderText="path, spec URL, or Swagger UI URL"
                    Text="{Binding InputText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                   IsEnabled="{Binding IsBusy, Converter={StaticResource InvertBool}}"
                    KeyDown="OnInputKeyDown" />
 
           <StackPanel Orientation="Horizontal" Spacing="8">
             <Button x:Uid="LoadButton" Content="Load" Click="OnLoadClick" MinWidth="62"
+                    IsEnabled="{Binding IsBusy, Converter={StaticResource InvertBool}}"
                     Style="{StaticResource AccentButtonStyle}" />
-            <Button x:Uid="BrowseButton" Content="Browse…" Click="OnBrowseClick" />
+            <Button x:Uid="BrowseButton" Content="Browse…" Click="OnBrowseClick"
+                    IsEnabled="{Binding IsBusy, Converter={StaticResource InvertBool}}" />
             <ProgressRing IsActive="{Binding IsBusy}" Width="18" Height="18"
                           VerticalAlignment="Center"
                           Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" />
@@ -97,14 +102,17 @@
           </ItemsControl>
         </StackPanel>
 
-        <!-- Output -->
-        <StackPanel Spacing="12">
+        <!-- Output. Locked until a specification is loaded: every field here
+             describes an export that does not exist yet. -->
+        <StackPanel Spacing="12" IsEnabled="{Binding HasModules}"
+                    Opacity="{Binding HasModules, Converter={StaticResource EnabledOpacity}}">
           <Border Height="1" Background="{StaticResource DividerBrush}" />
           <TextBlock x:Uid="OutputHeader" Text="OUTPUT" Style="{StaticResource SectionHeaderStyle}" />
 
           <StackPanel>
             <TextBlock x:Uid="FolderLayoutLabel" Text="Folder layout" Style="{StaticResource FieldLabelStyle}" />
-            <ComboBox HorizontalAlignment="Stretch" SelectedIndex="{Binding LayoutIndex, Mode=TwoWay}">
+            <ComboBox HorizontalAlignment="Stretch" SelectedIndex="{Binding LayoutIndex, Mode=TwoWay}"
+                      IsEnabled="{Binding HasModules}">
               <ComboBoxItem x:Uid="LayoutNestedItem" Content="Module folders, tag subfolders" />
               <ComboBoxItem x:Uid="LayoutFlatItem" Content="Flat “Module / Tag” folders" />
               <ComboBoxItem x:Uid="LayoutModuleOnlyItem" Content="Module folders only" />
@@ -114,13 +122,15 @@
           <StackPanel>
             <TextBlock x:Uid="WorkspaceNameLabel" Text="Workspace name" Style="{StaticResource FieldLabelStyle}" />
             <TextBox x:Uid="WorkspaceNameBox" PlaceholderText="defaults to the spec title"
-                     Text="{Binding WorkspaceName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                     Text="{Binding WorkspaceName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     IsEnabled="{Binding HasModules}" />
           </StackPanel>
 
           <StackPanel>
             <TextBlock x:Uid="BaseUrlLabel" Text="Base URL" Style="{StaticResource FieldLabelStyle}" />
             <TextBox x:Uid="BaseUrlBox" PlaceholderText="https://api.example.com"
-                     Text="{Binding BaseUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                     Text="{Binding BaseUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     IsEnabled="{Binding HasModules}" />
           </StackPanel>
 
           <StackPanel>
@@ -130,7 +140,8 @@
                          Foreground="{StaticResource MutedTextBrush}" />
             </StackPanel>
             <TextBox x:Uid="BearerTokenBox" PlaceholderText="prefills the bearer environment variable"
-                     Text="{Binding BearerToken, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                     Text="{Binding BearerToken, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     IsEnabled="{Binding HasModules}" />
           </StackPanel>
         </StackPanel>
 
@@ -202,6 +213,8 @@
         </StackPanel>
 
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+          <TextBlock Text="{Binding Version}" FontSize="11" VerticalAlignment="Center"
+                     Foreground="{StaticResource MutedTextBrush}" />
           <Button x:Uid="AboutButton" Content="About" Click="OnAboutClick" Padding="10,3"
                   FontSize="12" MinWidth="0" Background="Transparent" BorderThickness="0"
                   Foreground="{StaticResource SecondaryTextBrush}" VerticalAlignment="Center" />

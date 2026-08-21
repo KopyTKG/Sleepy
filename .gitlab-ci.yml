@@ -4,11 +4,12 @@
 # locally, with the same commands used here.
 #
 # - `lint` and `test` run on every push/tag, before anything is built.
-# - `cli:linux` compiles the Native AOT CLI binary on every push/tag.
-# - `gui:linux` / `gui:windows` publish the Uno Platform desktop app. Both are
-#   built on a Linux runner: the Skia desktop head cross-compiles to win-x64.
-# - On a tag (e.g. `v1.0.0`) every artifact is uploaded to the project's generic
-#   package registry and a GitLab Release links to them.
+# - `lint` and `test` run on every push, so branches stay honest.
+# - The three publish jobs and the release only run for a tag (e.g. `v1.0.0`):
+#   the binaries are release output, and building them on every branch push
+#   costs minutes per pipeline for artifacts nobody downloads.
+# - `gui:linux` / `gui:windows` both build on a Linux runner: the Skia desktop
+#   head cross-compiles to win-x64.
 #
 # NOTE: verify against your GitLab version — the generic-packages API and the
 # `release-cli` / `release:` syntax below match current GitLab (16.x+). Older
@@ -55,6 +56,8 @@ test:
 cli:linux:
   extends: .dotnet
   stage: build
+  rules:
+    - if: "$CI_COMMIT_TAG"
   before_script:
     - apt-get update -y
     - apt-get install -y --no-install-recommends clang zlib1g-dev
@@ -73,6 +76,8 @@ cli:linux:
 gui:linux:
   extends: .dotnet
   stage: build
+  rules:
+    - if: "$CI_COMMIT_TAG"
   script:
     - dotnet publish src/Sleepy.Gui/Sleepy.Gui.csproj -c Release -f net10.0-desktop -r linux-x64 --self-contained -o publish/gui-linux
     - tar -czf sleepy-gui-linux-x64.tar.gz -C publish/gui-linux .
@@ -84,6 +89,8 @@ gui:linux:
 gui:windows:
   extends: .dotnet
   stage: build
+  rules:
+    - if: "$CI_COMMIT_TAG"
   script:
     - dotnet publish src/Sleepy.Gui/Sleepy.Gui.csproj -c Release -f net10.0-desktop -r win-x64 --self-contained -o publish/gui-win
     - cd publish/gui-win && zip -qr ../../sleepy-gui-win-x64.zip . && cd ../..

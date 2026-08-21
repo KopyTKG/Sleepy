@@ -189,7 +189,7 @@ public sealed partial class MainPage : Page
 
         body.Children.Add(new TextBlock
         {
-            Text = $"sleepy {SleepyInfo.Version}",
+            Text = $"sleepy {SleepyInfo.BuildIdentity}",
             FontSize = 18,
             FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
         });

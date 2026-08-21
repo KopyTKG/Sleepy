@@ -125,12 +125,15 @@ install-gui: publish-gui-linux
 # Release plumbing
 # --------------------------------------------------------------------------
 
-# Set the version across Directory.Build.props, SleepyInfo, and the app manifest.
+# Set the version. Directory.Build.props is the only place it is written; the
+# apps read it back from the assembly.
 set-version version:
     sed -i 's|<Version>.*</Version>|<Version>{{version}}</Version>|' Directory.Build.props
-    sed -i 's|Version = "[^"]*"|Version = "{{version}}"|' src/Sleepy.Core/SleepyInfo.cs
-    sed -i 's|<ApplicationDisplayVersion>.*</ApplicationDisplayVersion>|<ApplicationDisplayVersion>{{version}}</ApplicationDisplayVersion>|' {{gui}}
-    @grep -n "{{version}}" Directory.Build.props src/Sleepy.Core/SleepyInfo.cs {{gui}}
+    @grep -n "<Version>" Directory.Build.props
+
+# Show what a built binary reports about itself.
+version:
+    @dotnet run --project {{cli}} -c {{configuration}} -- --version
 
 # Tag the current commit; CI builds and publishes the release from the tag.
 tag version:

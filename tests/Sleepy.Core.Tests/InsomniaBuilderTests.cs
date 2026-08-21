@@ -229,6 +229,18 @@ public class InsomniaBuilderTests
         => Assert.Equal(4, InsomniaBuilder.CountOperations(Module("Admin", AdminSpec)));
 
     [Fact]
+    public void SkipsModulesThatDeclareNoPaths()
+    {
+        var document = Build(
+            Module("Admin", AdminSpec),
+            Module("Placeholder", """{"openapi":"3.0.1","info":{"title":"Placeholder"}}"""));
+
+        Assert.DoesNotContain(
+            OfType(document, "request_group"),
+            folder => folder["name"]!.GetValue<string>() == "Placeholder");
+    }
+
+    [Fact]
     public void HandlesADocumentWithoutPaths()
     {
         var document = Build(Module("Empty", """{"openapi":"3.0.1","info":{"title":"Empty"}}"""));

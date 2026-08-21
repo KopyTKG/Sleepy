@@ -100,7 +100,8 @@ languages that need only two forms can leave `.Few` out.
   changed are less useful than one paragraph of reasoning.
 - Update `CHANGELOG.md` under `## [Unreleased]` for anything a user would
   notice. Internal refactors do not need an entry.
-- CI runs lint, the tests, and all three publishes; it must be green.
+- CI runs lint and the tests on every push; it must be green. The publish jobs
+  run only for tags, so a branch pipeline is quick.
 
 ## Releasing
 

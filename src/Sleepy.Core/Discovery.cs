@@ -23,6 +23,8 @@ public static class Discovery
     [
         "swagger/swagger-ui-init.js",
         "swagger-ui-init.js",
+        "swagger/index.js",
+        "index.js",
         "swagger/v1/swagger.json",
         "v3/api-docs/swagger-config",
         "swagger-config",
@@ -68,8 +70,22 @@ public static class Discovery
             return [ToModule(local, name, baseUrlOverride ?? string.Empty)];
         }
 
-        var fetched = await source.FetchAsync(input, cancellationToken).ConfigureAwait(false);
-        var text = SpecParser.DecodeUtf8(fetched.Data);
+        // The URL itself may not be servable — a bare host often 404s while its
+        // Swagger UI sits a level down — so a failure here is not yet fatal.
+        SleepyException? fetchFailure = null;
+        Fetched? fetched = null;
+        try
+        {
+            fetched = await source.FetchAsync(input, cancellationToken).ConfigureAwait(false);
+        }
+        catch (SleepyException exception) when (!NamesADocument(input))
+        {
+            // A URL that names a document is expected to serve it; only entry
+            // points worth probing get a second chance below.
+            fetchFailure = exception;
+        }
+
+        var text = fetched is null ? string.Empty : SpecParser.DecodeUtf8(fetched.Data);
 
         // The URL may already be a plain OpenAPI document.
         if (TryParseNode(text) is { } node)
@@ -93,6 +109,17 @@ public static class Discovery
                 .ConfigureAwait(false);
         }
 
+        // Otherwise follow the page's own <script src="…"> tags: which file holds
+        // the configuration varies between Swagger UI packagings (index.js,
+        // swagger-ui-init.js, a bundled app script).
+        var fromScripts = await ReadScriptsAsync(text, input, source, cancellationToken)
+            .ConfigureAwait(false);
+        if (fromScripts is { Count: > 0 })
+        {
+            return await LoadModulesAsync(fromScripts, source, baseUrlOverride, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
         var probed = await ProbeAsync(input, source, cancellationToken).ConfigureAwait(false);
         if (probed is { Count: > 0 })
         {
@@ -100,8 +127,100 @@ public static class Discovery
                 .ConfigureAwait(false);
         }
 
-        throw new SleepyException(
+        throw fetchFailure ?? new SleepyException(
             $"{input} is neither an OpenAPI document nor a Swagger UI configuration listing one");
+    }
+
+    /// <summary>Whether a URL points at a specific document rather than at an entry point.</summary>
+    private static bool NamesADocument(string url)
+    {
+        var path = Uri.TryCreate(url, UriKind.Absolute, out var uri) ? uri.AbsolutePath : url;
+        return path.EndsWith(".json", StringComparison.OrdinalIgnoreCase)
+            || path.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase)
+            || path.EndsWith(".yml", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Fetches every script an HTML page references and returns the first module
+    /// list found in one of them.
+    /// </summary>
+    private static async Task<List<ModuleRef>?> ReadScriptsAsync(
+        string html,
+        string documentUrl,
+        SpecSource source,
+        CancellationToken cancellationToken)
+    {
+        foreach (var scriptSource in ScriptSources(html))
+        {
+            var url = SpecSource.ResolveUrl(documentUrl, scriptSource);
+            var fetched = await source.TryFetchAsync(url, cancellationToken).ConfigureAwait(false);
+            if (fetched is null)
+            {
+                continue;
+            }
+
+            var refs = ExtractUrlsFromScript(SpecParser.DecodeUtf8(fetched.Data), url);
+            if (refs is { Count: > 0 })
+            {
+                return refs;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Reads the <c>src</c> of every script tag in a page, in document order.</summary>
+    private static IEnumerable<string> ScriptSources(string html)
+    {
+        var index = 0;
+        while (true)
+        {
+            var tag = html.IndexOf("<script", index, StringComparison.OrdinalIgnoreCase);
+            if (tag < 0)
+            {
+                yield break;
+            }
+
+            var end = html.IndexOf('>', tag);
+            if (end < 0)
+            {
+                yield break;
+            }
+
+            var attributes = html[tag..end];
+            index = end + 1;
+
+            var source = AttributeValue(attributes, "src");
+            if (!string.IsNullOrEmpty(source))
+            {
+                yield return source;
+            }
+        }
+    }
+
+    private static string? AttributeValue(string tag, string name)
+    {
+        var at = tag.IndexOf(name + "=", StringComparison.OrdinalIgnoreCase);
+        if (at < 0)
+        {
+            return null;
+        }
+
+        var rest = tag[(at + name.Length + 1)..].TrimStart();
+        if (rest.Length == 0)
+        {
+            return null;
+        }
+
+        var quote = rest[0];
+        if (quote is not ('"' or '\''))
+        {
+            var space = rest.IndexOfAny([' ', '\t', '\r', '\n']);
+            return space < 0 ? rest : rest[..space];
+        }
+
+        var close = rest.IndexOf(quote, 1);
+        return close < 0 ? null : rest[1..close];
     }
 
     /// <summary>Walks the well-known configuration endpoints around an input URL.</summary>
