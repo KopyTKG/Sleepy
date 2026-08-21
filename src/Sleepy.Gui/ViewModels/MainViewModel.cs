@@ -73,6 +73,9 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string _outputFileName = "insomnia.json";
 
+    /// <summary>What this build is, shown in the status bar and the About dialog.</summary>
+    public string Version => SleepyInfo.BuildIdentity;
+
     /// <summary>The converted export, ready to be written to disk.</summary>
     public string ExportJson { get; private set; } = string.Empty;
 

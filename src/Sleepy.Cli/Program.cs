@@ -8,7 +8,7 @@ namespace Sleepy.Cli;
 /// </summary>
 internal static class Program
 {
-    public const string Version = SleepyInfo.Version;
+    public static string Version => SleepyInfo.BuildIdentity;
 
     public static async Task<int> Main(string[] args)
     {
@@ -61,7 +61,7 @@ internal static class Program
 
     private static void WriteLicense()
     {
-        Console.WriteLine($"sleepy {Version} — {SleepyInfo.LicenseName}");
+        Console.WriteLine($"sleepy {SleepyInfo.BuildIdentity} — {SleepyInfo.LicenseName}");
         Console.WriteLine();
         Console.WriteLine(SleepyInfo.License);
         Console.WriteLine();

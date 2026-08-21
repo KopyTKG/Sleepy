@@ -1,0 +1,48 @@
+<Project>
+
+  <!--
+    Stamp the commit into the assembly's informational version, so a binary can
+    always be traced back to the source it was built from. The SDK appends
+    SourceRevisionId to InformationalVersion as "+<value>".
+
+    CI provides the commit through predefined variables; locally it comes from
+    git, with ".dirty" appended when the working tree has uncommitted changes.
+    Every step is optional: a build from a source archive with no git available
+    simply keeps the plain version.
+  -->
+  <Target Name="StampSourceRevision"
+          BeforeTargets="GetAssemblyVersion;GenerateAssemblyInfo"
+          Condition="'$(SourceRevisionId)' == '' and '$(DisableSourceRevisionStamp)' != 'true'">
+
+    <PropertyGroup Condition="'$(CI_COMMIT_SHORT_SHA)' != ''">
+      <SourceRevisionId>$(CI_COMMIT_SHORT_SHA)</SourceRevisionId>
+    </PropertyGroup>
+
+    <Exec Command="git rev-parse --short=7 HEAD"
+          Condition="'$(SourceRevisionId)' == ''"
+          ConsoleToMSBuild="true"
+          StandardOutputImportance="low"
+          StandardErrorImportance="low"
+          ContinueOnError="true"
+          IgnoreExitCode="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_SleepyCommit" />
+      <Output TaskParameter="ExitCode" PropertyName="_SleepyGitExitCode" />
+    </Exec>
+
+    <Exec Command="git status --porcelain --untracked-files=no"
+          Condition="'$(SourceRevisionId)' == '' and '$(_SleepyGitExitCode)' == '0'"
+          ConsoleToMSBuild="true"
+          StandardOutputImportance="low"
+          StandardErrorImportance="low"
+          ContinueOnError="true"
+          IgnoreExitCode="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_SleepyWorkingTree" />
+    </Exec>
+
+    <PropertyGroup Condition="'$(SourceRevisionId)' == '' and '$(_SleepyGitExitCode)' == '0'">
+      <SourceRevisionId>$(_SleepyCommit.Trim())</SourceRevisionId>
+      <SourceRevisionId Condition="'$(_SleepyWorkingTree)' != ''">$(SourceRevisionId).dirty</SourceRevisionId>
+    </PropertyGroup>
+  </Target>
+
+</Project>
