@@ -1,8 +1,8 @@
 # sleepy
 
 `sleepy` turns an **OpenAPI 3** specification — JSON or YAML, a file or a live
-URL — into an **Insomnia v4 export** (`_type: "export"`,
-`__export_format: 4`) ready to import.
+URL — into a collection you can import: **Insomnia v4**, **Postman v2.1**, or a
+**Bruno** folder.
 
 It handles **multi-module APIs**: when a URL points at a Swagger UI serving
 several definitions (the "Select a definition" dropdown), sleepy discovers every
@@ -43,6 +43,7 @@ sleepy <spec|url|-> [<spec|url> ...] [options]
 | Option | Meaning |
 | --- | --- |
 | `-o`, `--output <file>` | write the export to a file instead of stdout |
+| `--format <id>` | output format: `insomnia` (default), `postman`, `bruno` |
 | `--base-url <url>` | override the environment's `baseUrl` for every module |
 | `--name <name>` | workspace name (default: the spec title, or the host for several modules) |
 | `--module <name>` | only include this module; repeatable, case-insensitive |
@@ -68,6 +69,10 @@ sleepy <spec|url|-> [<spec|url> ...] [options]
 ```sh
 # from a file to stdout
 sleepy openapi.json
+
+# a Postman collection, or a Bruno folder
+sleepy openapi.json --format postman -o postman-collection.json
+sleepy openapi.json --format bruno -o ./bruno-collection
 
 # fetch by URL but point the requests at a different host
 sleepy https://docs.example.com/openapi.json --base-url https://api.example.com
@@ -152,14 +157,19 @@ Drop a spec anywhere on the window — or paste a path or Swagger UI URL and pre
 Enter — and every module it finds is loaded. Then:
 
 - tick the **modules** to include (shown once the input serves more than one);
+- pick the **output format**: Insomnia, Postman, or Bruno;
 - pick the **folder layout**: module folders with tag subfolders, flat
   `"Module / Tag"` folders, or module folders only;
 - set the **workspace name**, **base URL**, and optionally a **bearer token**
   written straight into the environment;
 - open **Fetch options** for a request header (e.g. `Authorization: Bearer …`)
   or to ignore TLS certificate errors while fetching;
-- watch the preview and its request count follow every change, then
-  **Save export…** or **Copy JSON**.
+- watch the preview — syntax-highlighted, with collapsible blocks and a request
+  count — follow every change, then **Save export…** or **Copy JSON**.
+
+Choosing Bruno turns the save into a folder picker and the preview into the file
+tree it will write, each file under its path — a folder format has nothing single
+to copy, so the copy button steps aside for it.
 
 Drag and drop uses the platform's own file drop support; where the desktop does
 not provide it, the path box and **Browse…** do the same job.
@@ -173,6 +183,19 @@ just publish-gui-windows                       # -> dist/gui-win-x64/ (cross-pub
 
 On Windows the WinAppSDK head (`-f net10.0-windows10.0.26100`) builds too; it
 needs the Windows SDK and is enabled automatically when the build runs there.
+
+### What it remembers
+
+The app keeps its choices in `~/.config/sleepy/settings.json` (`%AppData%\sleepy`
+on Windows): the language, the output format, the folder layout, and the fetch
+options — the request header and whether TLS errors are ignored. The About
+dialog names the file.
+
+The bearer token and the base URL are deliberately not saved. Both are per-API,
+and one of them is a credential.
+
+A missing or malformed file means defaults rather than an error, so deleting it
+resets the app.
 
 ### Languages
 
@@ -215,6 +238,28 @@ The artwork is `icon.png` in the repository root — replace it and rebuild to
 regenerate every icon size and the Windows `.ico`. The splash screen keeps its
 own copy at `src/Sleepy.Gui/Assets/Splash/splash.png`, because Uno.Resizetizer
 refuses to share one file between icon and splash.
+
+## Output formats
+
+| Format | `--format` | Output |
+| --- | --- | --- |
+| Insomnia v4 | `insomnia` (default) | one JSON export |
+| Postman v2.1 | `postman` | one JSON collection |
+| Bruno | `bruno` | a directory of `.bru` files |
+
+Every format is built from the same plan, so a collection describes the same API
+whichever one you pick: the same folder layout options, the same modules, the
+same base-URL variables, the same generated request bodies. What differs is only
+what each client understands — Postman writes URLs as objects and path
+parameters as `:id`, Bruno writes one file per request with `bruno.json` at the
+root and variables under `environments/`, Insomnia writes a flat resource list.
+
+Because Bruno is a directory, `-o` names a folder rather than a file, and sleepy
+reports how many files it wrote.
+
+Adding another format is one class in `src/Sleepy.Core/Builders` and one line in
+its registry — see the README there, and `src/Sleepy.Core/README.md` for how the
+engine's libraries divide the work.
 
 ## What it produces
 
@@ -320,13 +365,11 @@ output changes on purpose, re-record it with `just bless` and read the diff.
 
 | Path | Purpose |
 | --- | --- |
-| `src/Sleepy.Core/` | the conversion engine, shared by both apps |
-| `src/Sleepy.Core/Discovery.cs` | expands an input into the modules it refers to |
-| `src/Sleepy.Core/InsomniaBuilder.cs` | OpenAPI documents → merged Insomnia v4 resources |
-| `src/Sleepy.Core/ExampleGenerator.cs` | JSON schema → placeholder example value |
-| `src/Sleepy.Core/SpecParser.cs`, `Yaml.cs` | JSON or YAML in, one `JsonNode` tree out |
-| `src/Sleepy.Core/JsonWriter.cs` | deterministic pretty-printer |
-| `src/Sleepy.Core/SpecSource.cs` | stdin / file / http(s) input, headers, URL origin |
+| `src/Sleepy.Core/` | the vocabulary every library speaks in |
+| `src/Sleepy.Core/Serialization/` | JSON and YAML in, one tree out; the deterministic writer |
+| `src/Sleepy.Core/Discovery/` | where documents come from: files, URLs, Swagger UIs |
+| `src/Sleepy.Core/OpenApi/` | what a specification means: operations, examples, the plan |
+| `src/Sleepy.Core/Builders/` | what a collection looks like, one class per format |
 | `src/Sleepy.Cli/` | the `sleepy` command line tool |
 | `src/Sleepy.Gui/` | the `sleepy-GUI` Uno Platform desktop app |
 | `src/Sleepy.Gui/ViewModels/MainViewModel.cs` | load → options → convert → save |

@@ -6,6 +6,38 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-08-24
+
+### Added
+
+- **The desktop app remembers its choices** in
+  `~/.config/sleepy/settings.json` (`%AppData%\sleepy` on Windows): language,
+  output format, folder layout, request header, and the TLS setting. The bearer
+  token and base URL are deliberately not saved — both are per-API and one is a
+  credential. A missing or malformed file means defaults.
+- **Syntax highlighting and collapsible blocks in the desktop preview.** A
+  lenient tokenizer in `Sleepy.Serialization` marks property names, strings,
+  numbers, keywords and punctuation, and an outline pairs each line that opens a
+  block with the line that closes it. Anything not recognised stays plain and
+  folds nothing, so a Bruno file's block syntax reads as well as a JSON export.
+  Folding a block shows how many lines it hides, and folds nest: opening an outer
+  block leaves the ones folded inside it folded.
+
+- **Postman v2.1 and Bruno output**, chosen with `--format postman` or
+  `--format bruno` on the command line, or from the format picker in the desktop
+  app. Bruno is a directory of `.bru` files, so `-o` names a folder for it and
+  the app asks for one; its preview shows the file tree it will write.
+- The engine split into five libraries — `Sleepy.Core` (vocabulary),
+  `Sleepy.Serialization`, `Sleepy.Discovery`, `Sleepy.OpenApi` and
+  `Sleepy.Builders` — so the dependency direction is enforced by the compiler.
+  Each holds one type per file, and `src/Sleepy.Core/README.md` says what belongs
+  where.
+- `Sleepy.Builders`, a library nested under Core holding one class per format
+  behind an `ICollectionBuilder` seam, so a new target is an implementation plus
+  a registration. The decisions every format shares — collection name, which
+  modules contribute, base-URL variables — moved into `CollectionPlan` in Core,
+  so all three formats describe the same API.
+
 ## [0.5.0] — 2026-08-21
 
 Rewritten from Odin to C#. Single-spec output is byte-identical to 0.2.0.
@@ -63,7 +95,8 @@ Rewritten from Odin to C#. Single-spec output is byte-identical to 0.2.0.
   export, with tag folders, bearer authentication, and generated request-body
   examples.
 
-[Unreleased]: https://gitlab.com/kopytkg/sleepy/-/compare/v0.5.0...main
+[Unreleased]: https://gitlab.com/kopytkg/sleepy/-/compare/v0.6.0...main
+[0.6.0]: https://gitlab.com/kopytkg/sleepy/-/releases/v0.6.0
 [0.5.0]: https://gitlab.com/kopytkg/sleepy/-/releases/v0.5.0
 [0.2.0]: https://gitlab.com/kopytkg/sleepy/-/releases/v0.2.0
 [0.1.0]: https://gitlab.com/kopytkg/sleepy/-/releases/v0.1.0

@@ -4,6 +4,19 @@
     <Project Path="src/Sleepy.Core/Sleepy.Core.csproj" />
     <Project Path="src/Sleepy.Gui/Sleepy.Gui.csproj" />
   </Folder>
+  <Folder Name="/src/Sleepy.Core/" />
+  <Folder Name="/src/Sleepy.Core/Builders/">
+    <Project Path="src/Sleepy.Core/Builders/Sleepy.Builders.csproj" />
+  </Folder>
+  <Folder Name="/src/Sleepy.Core/Discovery/">
+    <Project Path="src/Sleepy.Core/Discovery/Sleepy.Discovery.csproj" />
+  </Folder>
+  <Folder Name="/src/Sleepy.Core/OpenApi/">
+    <Project Path="src/Sleepy.Core/OpenApi/Sleepy.OpenApi.csproj" />
+  </Folder>
+  <Folder Name="/src/Sleepy.Core/Serialization/">
+    <Project Path="src/Sleepy.Core/Serialization/Sleepy.Serialization.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Sleepy.Core.Tests/Sleepy.Core.Tests.csproj" />
   </Folder>

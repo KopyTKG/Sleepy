@@ -48,10 +48,11 @@ and the names changed is perfectly fine.
 
 ## Working on the code
 
-**Layout.** `src/Sleepy.Core` is the engine — parsing, discovery, example
-generation, the export writer. `src/Sleepy.Cli` and `src/Sleepy.Gui` are thin
-shells over it. Anything that changes the *output* belongs in Core, where the
-tests can reach it.
+**Layout.** The engine is five libraries under `src/Sleepy.Core`: the vocabulary
+in Core itself, then Serialization, Discovery, OpenApi and Builders, each
+depending only on the ones above it. `src/Sleepy.Cli` and `src/Sleepy.Gui` are
+thin shells over them. Anything that changes the *output* belongs in a library,
+where the tests can reach it; `src/Sleepy.Core/README.md` says which one.
 
 **Tests.** `tests/Sleepy.Core.Tests` covers the engine directly, plus a golden
 test that converts a fixture and compares it byte for byte with a recorded
