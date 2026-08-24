@@ -1,0 +1,23 @@
+{
+  "components": [
+    { "name": ".NET runtime and libraries", "license": "MIT", "usedBy": "both",
+      "url": "https://github.com/dotnet/runtime/blob/main/LICENSE.TXT" },
+    { "name": "YamlDotNet", "license": "MIT", "usedBy": "both, for YAML input",
+      "url": "https://github.com/aaubry/YamlDotNet/blob/master/LICENSE.txt" },
+    { "name": "Uno Platform", "license": "Apache-2.0", "usedBy": "sleepy-GUI",
+      "url": "https://github.com/unoplatform/uno/blob/master/License.md" },
+    { "name": "SkiaSharp", "license": "MIT", "usedBy": "sleepy-GUI, rendering",
+      "url": "https://github.com/mono/SkiaSharp/blob/main/LICENSE.md" },
+    { "name": "HarfBuzzSharp", "license": "MIT", "usedBy": "sleepy-GUI, text shaping",
+      "url": "https://github.com/mono/SkiaSharp/blob/main/LICENSE.md" },
+    { "name": "CommunityToolkit.Mvvm", "license": "MIT", "usedBy": "sleepy-GUI",
+      "url": "https://github.com/CommunityToolkit/dotnet/blob/main/License.md" },
+    { "name": "CommonServiceLocator", "license": "MS-PL", "usedBy": "sleepy-GUI, via Uno",
+      "url": "https://github.com/unitycontainer/commonservicelocator/blob/master/LICENSE" },
+    { "name": "Tmds.DBus.Protocol", "license": "MIT", "usedBy": "sleepy-GUI, Linux desktop",
+      "url": "https://github.com/tmds/Tmds.DBus/blob/main/COPYING" },
+    { "name": "LibVLCSharp", "license": "LGPL-2.1-or-later", "usedBy": "sleepy-GUI, unused",
+      "url": "https://code.videolan.org/videolan/LibVLCSharp/-/blob/3.x/LICENSE" }
+  ],
+  "notes": "Apache-2.0 requires that its notice travels with redistributions; LGPL-2.1 additionally requires that recipients can relink the covered component. LibVLCSharp arrives as a transitive dependency of Uno's MediaPlayerElement support, which sleepy does not use: it ships as an unreferenced assembly and can be deleted from the published folder without affecting the app."
+}

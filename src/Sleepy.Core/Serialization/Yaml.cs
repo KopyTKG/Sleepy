@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Text.Json.Nodes;
 using YamlDotNet.RepresentationModel;
 
-namespace Sleepy;
+namespace Sleepy.Serialization;
 
 /// <summary>
 /// Converts a YAML document into the same <see cref="JsonNode"/> tree the JSON

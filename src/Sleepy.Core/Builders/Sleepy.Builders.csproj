@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Sleepy.Builders</RootNamespace>
+    <AssemblyName>Sleepy.Builders</AssemblyName>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Sleepy.Core.csproj" />
+    <ProjectReference Include="../OpenApi/Sleepy.OpenApi.csproj" />
+    <ProjectReference Include="../Serialization/Sleepy.Serialization.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Sleepy.Core.Tests" />
+  </ItemGroup>
+
+</Project>

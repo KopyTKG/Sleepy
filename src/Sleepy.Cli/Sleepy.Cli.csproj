@@ -15,7 +15,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../Sleepy.Core/Discovery/Sleepy.Discovery.csproj" />
+    <ProjectReference Include="../Sleepy.Core/Serialization/Sleepy.Serialization.csproj" />
     <ProjectReference Include="../Sleepy.Core/Sleepy.Core.csproj" />
+    <ProjectReference Include="../Sleepy.Core/Builders/Sleepy.Builders.csproj" />
   </ItemGroup>
 
 </Project>

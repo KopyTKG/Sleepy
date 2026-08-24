@@ -1,5 +1,3 @@
-using Sleepy;
-
 namespace Sleepy.Cli;
 
 internal sealed record Options
@@ -17,6 +15,9 @@ internal sealed record Options
     public IReadOnlyList<string> Headers { get; init; } = [];
 
     public FolderLayout Layout { get; init; } = FolderLayout.Nested;
+
+    /// <summary>Output format id; see <see cref="Sleepy.Builders.CollectionBuilders"/>.</summary>
+    public string Format { get; init; } = string.Empty;
 
     public string BearerToken { get; init; } = string.Empty;
 
@@ -52,6 +53,7 @@ internal static class Cli
         string? baseUrl = null;
         string? workspaceName = null;
         var layout = FolderLayout.Nested;
+        var format = string.Empty;
         var bearerToken = string.Empty;
         var insecure = false;
         var listOnly = false;
@@ -114,6 +116,15 @@ internal static class Cli
                     layout = FolderLayout.ModuleOnly;
                     break;
 
+                case "--format":
+                    if (!TryTakeValue(args, ref i, "--format", out var parsedFormat))
+                    {
+                        return ParseResult.Error;
+                    }
+
+                    format = parsedFormat;
+                    break;
+
                 case "--bearer":
                     if (!TryTakeValue(args, ref i, "--bearer", out var parsedBearer))
                     {
@@ -163,6 +174,7 @@ internal static class Cli
             ModuleFilters = moduleFilters,
             Headers = headers,
             Layout = layout,
+            Format = format,
             BearerToken = bearerToken,
             Insecure = insecure,
             ListOnly = listOnly,
@@ -200,6 +212,9 @@ internal static class Cli
         Console.Error.WriteLine("      --base-url <url>  override the environment's baseUrl for every module");
         Console.Error.WriteLine("      --name <name>     workspace name (default: spec title / \"OpenAPI Import\")");
         Console.Error.WriteLine("      --module <name>   only include this module (repeatable, case-insensitive)");
+        Console.Error.WriteLine(
+            $"      --format <id>     output format: {string.Join(", ", Sleepy.Builders.CollectionBuilders.Ids)}"
+            + $" (default: {Sleepy.Builders.CollectionBuilders.Default.FormatId})");
         Console.Error.WriteLine("      --flat            one folder level named \"<Module> / <Tag>\"");
         Console.Error.WriteLine("      --no-tags         a folder per module only, without tag subfolders");
         Console.Error.WriteLine("      --bearer <token>  prefill the environment's bearer variable");

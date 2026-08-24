@@ -2,7 +2,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
-namespace Sleepy;
+namespace Sleepy.Serialization;
 
 /// <summary>
 /// Parses a specification document that may be JSON or YAML.

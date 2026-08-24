@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml.Input;
 using Sleepy.Gui.Services;
@@ -17,6 +18,17 @@ public sealed partial class MainPage : Page
         this.InitializeComponent();
         DataContext = ViewModel;
         SelectCurrentLanguage();
+
+        ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+        PreviewHighlighter.Render(PreviewText, ViewModel.Preview);
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(MainViewModel.Preview))
+        {
+            PreviewHighlighter.Render(PreviewText, ViewModel.Preview);
+        }
     }
 
     public MainViewModel ViewModel { get; } = MainViewModel.Instance;
@@ -144,6 +156,12 @@ public sealed partial class MainPage : Page
 
     private async void OnSaveClick(object sender, RoutedEventArgs e)
     {
+        if (ViewModel.IsFolderFormat)
+        {
+            await SaveToFolderAsync();
+            return;
+        }
+
         try
         {
             var picker = new FileSavePicker
@@ -151,7 +169,7 @@ public sealed partial class MainPage : Page
                 SuggestedFileName = ViewModel.SuggestedFileName,
                 DefaultFileExtension = ".json",
             };
-            picker.FileTypeChoices.Add("Insomnia export", [".json"]);
+            picker.FileTypeChoices.Add(ViewModel.Format.DisplayName, [".json"]);
             InitializeWithWindow(picker);
 
             if (await picker.PickSaveFileAsync() is { } file)
@@ -162,6 +180,29 @@ public sealed partial class MainPage : Page
         catch (Exception exception)
         {
             ViewModel.SetError($"Save dialog unavailable ({exception.Message}).");
+        }
+    }
+
+    /// <summary>
+    /// Bruno and other folder formats are a directory of files, so the save flow
+    /// asks for a folder rather than a file name.
+    /// </summary>
+    private async Task SaveToFolderAsync()
+    {
+        try
+        {
+            var picker = new FolderPicker { SuggestedStartLocation = PickerLocationId.DocumentsLibrary };
+            picker.FileTypeFilter.Add("*");
+            InitializeWithWindow(picker);
+
+            if (await picker.PickSingleFolderAsync() is { } folder)
+            {
+                await ViewModel.SaveToFolderAsync(folder.Path);
+            }
+        }
+        catch (Exception exception)
+        {
+            ViewModel.SetError(Localizer.Format("Status_SavePickerUnavailable", exception.Message));
         }
     }
 
@@ -183,9 +224,14 @@ public sealed partial class MainPage : Page
     /// components that ship with it. Embedding them here is what carries the
     /// notice into a redistributed binary.
     /// </summary>
+    /// <summary>
+    /// Shows the licence the app is distributed under, plus the components that
+    /// ship with it. Embedding them is what carries the notice into a
+    /// redistributed binary; laying them out here is what makes them readable.
+    /// </summary>
     private async void OnAboutClick(object sender, RoutedEventArgs e)
     {
-        var body = new StackPanel { Spacing = 12 };
+        var body = new StackPanel { Spacing = 16 };
 
         body.Children.Add(new TextBlock
         {
@@ -194,35 +240,105 @@ public sealed partial class MainPage : Page
             FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
         });
 
-        // The copyright and licence name are not repeated here: the embedded
-        // licence text opens with both.
-        var licence = new TextBlock
+        body.Children.Add(new TextBlock
         {
-            Text = ForDisplay($"{SleepyInfo.License}\n\n{SleepyInfo.ThirdPartyNotices}"),
-            IsTextSelectionEnabled = true,
+            Text = Localizer.Format("About_SettingsPath", Settings.Path),
+            FontSize = 12,
             TextWrapping = TextWrapping.Wrap,
-            FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Consolas, monospace"),
-            FontSize = 11.5,
-            LineHeight = 16,
-        };
-
-        body.Children.Add(new ScrollViewer
-        {
-            Content = licence,
-            Height = 380,
-            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
-            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            IsTextSelectionEnabled = true,
+            Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["SecondaryTextBrush"],
         });
+
+        // The copyright and licence name are not repeated: the licence opens with both.
+        body.Children.Add(Section(Localizer.Get("About_License"), LicenceText()));
+        body.Children.Add(Section(Localizer.Get("About_ThirdParty"), ComponentTable()));
 
         var dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
             Title = Localizer.Get("About_Title"),
             CloseButtonText = Localizer.Get("About_Close"),
-            Content = new Grid { Children = { body }, Width = 780 },
+            Content = new ScrollViewer
+            {
+                Content = new Grid { Children = { body }, Width = 780 },
+                MaxHeight = 520,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            },
         };
 
         await dialog.ShowAsync();
+    }
+
+    /// <summary>A heading with its content underneath, the way the main page does it.</summary>
+    private static StackPanel Section(string heading, UIElement content)
+    {
+        var section = new StackPanel { Spacing = 8 };
+        section.Children.Add(new TextBlock
+        {
+            Text = heading,
+            Style = (Style)Application.Current.Resources["SectionHeaderStyle"],
+        });
+        section.Children.Add(content);
+        return section;
+    }
+
+    private static TextBlock LicenceText() => new()
+    {
+        Text = ForDisplay(SleepyInfo.License),
+        IsTextSelectionEnabled = true,
+        TextWrapping = TextWrapping.Wrap,
+        FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Consolas, monospace"),
+        FontSize = 11.5,
+        LineHeight = 16,
+    };
+
+    /// <summary>The third-party components, one row each, plus the obligations note.</summary>
+    private static StackPanel ComponentTable()
+    {
+        var table = new Grid { ColumnSpacing = 16, RowSpacing = 6 };
+        table.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        table.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        table.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+        var row = 0;
+        foreach (var component in SleepyInfo.ThirdPartyComponents)
+        {
+            table.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+            Add(table, Cell(component.Name), row, 0);
+            Add(table, Cell(component.License, muted: true), row, 1);
+            Add(table, Cell(component.UsedBy, muted: true), row, 2);
+            row++;
+        }
+
+        var block = new StackPanel { Spacing = 12 };
+        block.Children.Add(table);
+        block.Children.Add(new TextBlock
+        {
+            Text = SleepyInfo.ThirdPartyNotes,
+            TextWrapping = TextWrapping.Wrap,
+            FontSize = 12,
+            Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["SecondaryTextBrush"],
+        });
+
+        return block;
+    }
+
+    private static TextBlock Cell(string text, bool muted = false) => new()
+    {
+        Text = text,
+        FontSize = 12,
+        TextWrapping = TextWrapping.Wrap,
+        IsTextSelectionEnabled = true,
+        Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources[
+            muted ? "SecondaryTextBrush" : "PrimaryTextBrush"],
+    };
+
+    private static void Add(Grid grid, FrameworkElement element, int row, int column)
+    {
+        Grid.SetRow(element, row);
+        Grid.SetColumn(element, column);
+        grid.Children.Add(element);
     }
 
     /// <summary>

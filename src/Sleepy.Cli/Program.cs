@@ -1,5 +1,4 @@
 using System.Text;
-using Sleepy;
 
 namespace Sleepy.Cli;
 
@@ -75,7 +74,7 @@ internal static class Program
         var modules = new List<ApiModule>();
         foreach (var input in options.Inputs)
         {
-            var expanded = await Discovery
+            var expanded = await ModuleDiscovery
                 .ExpandAsync(input, source, options.BaseUrl, CancellationToken.None)
                 .ConfigureAwait(false);
             modules.AddRange(expanded);
@@ -104,14 +103,24 @@ internal static class Program
         }
 
         var sourceName = string.Join(",", options.Inputs.Select(input => input == "-" ? "stdin" : input));
-        var document = InsomniaBuilder.Build(modules, new BuildOptions
+        var builder = options.Format.Length == 0
+            ? CollectionBuilders.Default
+            : CollectionBuilders.Resolve(options.Format);
+
+        var collection = builder.Build(modules, new BuildOptions
         {
             SourceName = sourceName,
             WorkspaceName = options.WorkspaceName,
             Layout = options.Layout,
             BearerToken = options.BearerToken,
         });
-        var output = JsonWriter.Write(document);
+
+        if (!collection.IsSingleFile)
+        {
+            return await WriteFolderCollectionAsync(collection, options).ConfigureAwait(false);
+        }
+
+        var output = collection.Content;
 
         if (options.OutputPath.Length == 0)
         {
@@ -124,6 +133,28 @@ internal static class Program
             Console.Error.WriteLine($"wrote {options.OutputPath}");
         }
 
+        return 0;
+    }
+
+    /// <summary>
+    /// Writes a format that is a directory of files rather than one document.
+    /// </summary>
+    private static async Task<int> WriteFolderCollectionAsync(BuiltCollection collection, Options options)
+    {
+        var root = options.OutputPath.Length == 0
+            ? throw new SleepyException(
+                $"the {collection.FormatId} format writes a directory; give one with -o")
+            : options.OutputPath;
+
+        foreach (var file in collection.Files)
+        {
+            var path = Path.Combine(root, file.RelativePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            await File.WriteAllTextAsync(path, file.Content, new UTF8Encoding(false))
+                .ConfigureAwait(false);
+        }
+
+        Console.Error.WriteLine($"wrote {collection.Files.Count} files to {root}");
         return 0;
     }
 

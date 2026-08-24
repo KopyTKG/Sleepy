@@ -1,4 +1,6 @@
 using System.Reflection;
+using System.Text;
+using System.Text.Json.Nodes;
 
 namespace Sleepy;
 
@@ -14,7 +16,8 @@ namespace Sleepy;
 public static class SleepyInfo
 {
     private static string? _license;
-    private static string? _thirdPartyNotices;
+    private static IReadOnlyList<ThirdPartyComponent>? _components;
+    private static string? _thirdPartyNotes;
 
     /// <summary>
     /// The full informational version, e.g. <c>0.5.0+c5fac9f</c>, or
@@ -55,9 +58,83 @@ public static class SleepyInfo
     /// <summary>The full licence text, embedded so it ships inside every binary.</summary>
     public static string License => _license ??= ReadEmbedded("LICENSE");
 
-    /// <summary>Licences of the components distributed alongside sleepy.</summary>
-    public static string ThirdPartyNotices =>
-        _thirdPartyNotices ??= ReadEmbedded("THIRD-PARTY-NOTICES");
+    /// <summary>
+    /// The components distributed alongside sleepy, as data rather than prose, so
+    /// each surface can render them the way it renders anything else.
+    /// </summary>
+    public static IReadOnlyList<ThirdPartyComponent> ThirdPartyComponents
+    {
+        get
+        {
+            EnsureNoticesRead();
+            return _components ?? [];
+        }
+    }
+
+    /// <summary>The obligations worth knowing about, in one paragraph.</summary>
+    public static string ThirdPartyNotes
+    {
+        get
+        {
+            EnsureNoticesRead();
+            return _thirdPartyNotes ?? string.Empty;
+        }
+    }
+
+    /// <summary>The notices as aligned plain text, for the command line.</summary>
+    public static string ThirdPartyNotices
+    {
+        get
+        {
+            var components = ThirdPartyComponents;
+            if (components.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            var nameWidth = components.Max(component => component.Name.Length);
+            var licenceWidth = components.Max(component => component.License.Length);
+
+            var text = new StringBuilder();
+            text.AppendLine("Third-party components");
+            text.AppendLine();
+            foreach (var component in components)
+            {
+                text.Append("  ")
+                    .Append(component.Name.PadRight(nameWidth))
+                    .Append("  ")
+                    .Append(component.License.PadRight(licenceWidth))
+                    .Append("  ")
+                    .AppendLine(component.UsedBy);
+            }
+
+            if (ThirdPartyNotes.Length > 0)
+            {
+                text.AppendLine();
+                text.AppendLine(ThirdPartyNotes);
+            }
+
+            return text.ToString().TrimEnd();
+        }
+    }
+
+    private static void EnsureNoticesRead()
+    {
+        if (_components is not null)
+        {
+            return;
+        }
+
+        var notices = JsonNode.Parse(ReadEmbedded("THIRD-PARTY-NOTICES"));
+        _thirdPartyNotes = notices?["notes"]?.GetValue<string>() ?? string.Empty;
+        _components = (notices?["components"] as JsonArray ?? [])
+            .Select(entry => new ThirdPartyComponent(
+                entry?["name"]?.GetValue<string>() ?? string.Empty,
+                entry?["license"]?.GetValue<string>() ?? string.Empty,
+                entry?["usedBy"]?.GetValue<string>() ?? string.Empty,
+                entry?["url"]?.GetValue<string>() ?? string.Empty))
+            .ToList();
+    }
 
     private static string ReadInformationalVersion()
     {

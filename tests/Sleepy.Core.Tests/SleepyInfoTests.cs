@@ -44,9 +44,70 @@ public class SleepyInfoTests
         => Assert.Equal($"sleepy/{SleepyInfo.Version}", SleepyInfo.UserAgent);
 
     [Fact]
-    public void EmbedsTheLicenceAndNotices()
+    public void EmbedsTheLicence()
+        => Assert.Contains("BSD 3-Clause License", SleepyInfo.License, StringComparison.Ordinal);
+
+    [Fact]
+    public void ReadsTheThirdPartyComponentsAsData()
     {
-        Assert.Contains("BSD 3-Clause License", SleepyInfo.License, StringComparison.Ordinal);
-        Assert.Contains("Third-party notices", SleepyInfo.ThirdPartyNotices, StringComparison.Ordinal);
+        var components = SleepyInfo.ThirdPartyComponents;
+
+        Assert.NotEmpty(components);
+        Assert.All(components, component =>
+        {
+            Assert.False(string.IsNullOrWhiteSpace(component.Name));
+            Assert.False(string.IsNullOrWhiteSpace(component.License));
+            Assert.False(string.IsNullOrWhiteSpace(component.UsedBy));
+            Assert.StartsWith("https://", component.Url, StringComparison.Ordinal);
+        });
+        Assert.Contains(components, component => component.Name == "YamlDotNet");
+        Assert.NotEmpty(SleepyInfo.ThirdPartyNotes);
+    }
+
+    [Fact]
+    public void RendersTheNoticesAsAlignedText()
+    {
+        var text = SleepyInfo.ThirdPartyNotices;
+
+        Assert.Contains("Third-party components", text, StringComparison.Ordinal);
+        Assert.All(SleepyInfo.ThirdPartyComponents, component =>
+            Assert.Contains(component.Name, text, StringComparison.Ordinal));
+
+        // Aligned means every component row starts at the same column.
+        var rows = text.Split('\n')
+            .Where(line => line.StartsWith("  ", StringComparison.Ordinal) && line.Trim().Length > 0)
+            .ToList();
+        Assert.All(rows, row => Assert.StartsWith("  ", row, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void TheRepositoryNoticesMatchTheEmbeddedOnes()
+    {
+        // The markdown file is what a reader of the repository sees; the embedded
+        // data is what a user of a binary sees. They have to say the same thing.
+        var markdown = File.ReadAllText(FindRepositoryFile("THIRD-PARTY-NOTICES.md"));
+
+        Assert.All(SleepyInfo.ThirdPartyComponents, component =>
+        {
+            Assert.Contains(component.Name, markdown, StringComparison.Ordinal);
+            Assert.Contains(component.License, markdown, StringComparison.Ordinal);
+        });
+    }
+
+    private static string FindRepositoryFile(string name)
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null)
+        {
+            var candidate = Path.Combine(directory.FullName, name);
+            if (File.Exists(candidate))
+            {
+                return candidate;
+            }
+
+            directory = directory.Parent;
+        }
+
+        throw new FileNotFoundException($"{name} not found above {AppContext.BaseDirectory}");
     }
 }

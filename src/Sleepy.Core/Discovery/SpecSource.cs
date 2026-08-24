@@ -1,8 +1,6 @@
+using Sleepy.Serialization;
 
-namespace Sleepy;
-
-/// <summary>The bytes returned by a fetch, plus the content type the server declared.</summary>
-public sealed record Fetched(byte[] Data, string ContentType);
+namespace Sleepy.Discovery;
 
 /// <summary>
 /// Reading documents from stdin, a file, or an http(s) URL.
@@ -109,6 +107,3 @@ public sealed class SpecSource : IDisposable
 
     public void Dispose() => _client.Dispose();
 }
-
-/// <summary>An error that should be reported to the user without a stack trace.</summary>
-public sealed class SleepyException(string message) : Exception(message);

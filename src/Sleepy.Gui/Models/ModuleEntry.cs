@@ -11,7 +11,7 @@ public partial class ModuleEntry : ObservableObject
     public ModuleEntry(ApiModule module)
     {
         Module = module;
-        RequestCount = InsomniaBuilder.CountOperations(module);
+        RequestCount = Operations.Count(module);
     }
 
     public ApiModule Module { get; }

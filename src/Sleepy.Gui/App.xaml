@@ -27,6 +27,13 @@
       <SolidColorBrush x:Key="ErrorBrush" Color="#F0714E" />
       <SolidColorBrush x:Key="CodeTextBrush" Color="#C9D4DF" />
 
+      <!-- Preview syntax colours. -->
+      <SolidColorBrush x:Key="JsonKeyBrush" Color="#79C0FF" />
+      <SolidColorBrush x:Key="JsonStringBrush" Color="#A5D6FF" />
+      <SolidColorBrush x:Key="JsonNumberBrush" Color="#F2CC60" />
+      <SolidColorBrush x:Key="JsonKeywordBrush" Color="#FF7B72" />
+      <SolidColorBrush x:Key="JsonPunctuationBrush" Color="#7D8590" />
+
       <!-- Make the Fluent accent brushes (used by AccentButtonStyle) our blue. -->
       <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="{StaticResource AccentColor}" />
       <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="{StaticResource AccentColorHover}" />

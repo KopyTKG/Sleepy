@@ -1,9 +1,7 @@
 using System.Text.Json.Nodes;
+using Sleepy.Serialization;
 
-namespace Sleepy;
-
-/// <summary>One API module: a single OpenAPI document plus where it came from.</summary>
-public sealed record ApiModule(string Name, JsonNode? Spec, string BaseUrl, string SourceName);
+namespace Sleepy.Discovery;
 
 /// <summary>A module reference discovered in a Swagger UI configuration.</summary>
 public sealed record ModuleRef(string Name, string Url);
@@ -16,7 +14,7 @@ public sealed record ModuleRef(string Name, string Url);
 /// springdoc's grouped APIs, springfox's resource list) publish their document
 /// list as JSON; this walks the usual endpoints to find it.
 /// </summary>
-public static class Discovery
+public static class ModuleDiscovery
 {
     /// <summary>Endpoints probed, relative to the input URL, when it is not itself a document list.</summary>
     private static readonly string[] ConfigCandidates =

@@ -29,7 +29,7 @@ public class DiscoveryTests : IDisposable
     private static async Task<List<ApiModule>> ExpandAsync(string input, string? baseUrlOverride = null)
     {
         using var source = new SpecSource([], allowInvalidCertificates: false);
-        return await Discovery.ExpandAsync(input, source, baseUrlOverride, CancellationToken.None);
+        return await ModuleDiscovery.ExpandAsync(input, source, baseUrlOverride, CancellationToken.None);
     }
 
     private string WriteTemporaryFile(string name, string content)

@@ -1,12 +1,12 @@
 using System.Text.Json.Nodes;
 
-namespace Sleepy;
+namespace Sleepy.Serialization;
 
 /// <summary>
 /// Small read helpers over <see cref="JsonNode"/> that never throw: a missing
 /// key, a wrong node kind, or a null node all degrade to "not found".
 /// </summary>
-internal static class Json
+public static class Json
 {
     public static JsonObject? AsObject(JsonNode? node) => node as JsonObject;
 

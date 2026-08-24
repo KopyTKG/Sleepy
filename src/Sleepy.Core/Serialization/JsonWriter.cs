@@ -3,7 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
-namespace Sleepy;
+namespace Sleepy.Serialization;
 
 /// <summary>
 /// Pretty-prints a <see cref="JsonNode"/> tree with two-space indentation and

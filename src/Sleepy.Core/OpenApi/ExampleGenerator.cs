@@ -1,11 +1,12 @@
 using System.Text.Json.Nodes;
+using Sleepy.Serialization;
 
-namespace Sleepy;
+namespace Sleepy.OpenApi;
 
 /// <summary>
 /// Walks a JSON schema and produces a placeholder example value for it.
 /// </summary>
-internal static class ExampleGenerator
+public static class ExampleGenerator
 {
     private const int MaxDepth = 6;
 

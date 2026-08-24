@@ -10,8 +10,6 @@ namespace Sleepy.Gui.Services;
 /// </summary>
 public static class Localizer
 {
-    private const string LanguageSettingKey = "language";
-
     private static ResourceLoader _loader = ResourceLoader.GetForViewIndependentUse();
 
     /// <summary>The languages offered in the picker, in the order shown.</summary>
@@ -82,7 +80,7 @@ public static class Localizer
                 ? CultureInfo.InstalledUICulture
                 : new CultureInfo(language);
             _loader = ResourceLoader.GetForViewIndependentUse();
-            SaveSetting(language);
+            Settings.Update(settings => settings with { Language = language });
         }
         catch (Exception)
         {
@@ -93,31 +91,10 @@ public static class Localizer
     /// <summary>Applies the language chosen in an earlier session, if any.</summary>
     public static void RestoreSavedLanguage()
     {
-        try
+        var language = Settings.Current.Language;
+        if (language.Length > 0)
         {
-            if (Windows.Storage.ApplicationData.Current.LocalSettings.Values
-                    .TryGetValue(LanguageSettingKey, out var saved)
-                && saved is string language
-                && language.Length > 0)
-            {
-                SetLanguage(language);
-            }
-        }
-        catch (Exception)
-        {
-            // No settings store: fall back to the system language.
-        }
-    }
-
-    private static void SaveSetting(string language)
-    {
-        try
-        {
-            Windows.Storage.ApplicationData.Current.LocalSettings.Values[LanguageSettingKey] = language;
-        }
-        catch (Exception)
-        {
-            // Not being able to remember the choice is not worth surfacing.
+            SetLanguage(language);
         }
     }
 }

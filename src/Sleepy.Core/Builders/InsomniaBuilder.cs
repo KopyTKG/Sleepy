@@ -1,57 +1,19 @@
 using System.Text.Json.Nodes;
+using Sleepy.OpenApi;
+using Sleepy.Serialization;
 
-namespace Sleepy;
-
-public enum FolderLayout
-{
-    /// <summary>A folder per module, with a tag subfolder inside it.</summary>
-    Nested,
-
-    /// <summary>A single folder level named "&lt;Module&gt; / &lt;Tag&gt;".</summary>
-    Flat,
-
-    /// <summary>A folder per module only; requests sit directly inside it.</summary>
-    ModuleOnly,
-}
-
-/// <summary>Everything about the export that is not the specifications themselves.</summary>
-public sealed record BuildOptions
-{
-    /// <summary>Recorded in <c>__export_source</c>.</summary>
-    public string SourceName { get; init; } = string.Empty;
-
-    /// <summary>Workspace name; defaults to the spec title, or the host for several modules.</summary>
-    public string? WorkspaceName { get; init; }
-
-    public FolderLayout Layout { get; init; } = FolderLayout.Nested;
-
-    /// <summary>Prefills the environment's <c>bearer</c> variable.</summary>
-    public string BearerToken { get; init; } = string.Empty;
-}
+namespace Sleepy.Builders;
 
 /// <summary>
 /// Turns one or more parsed OpenAPI 3 documents into a single Insomnia v4 export
-/// document.
+/// document. Reached through <see cref="InsomniaV4Builder"/>; the type stays
+/// public because it is the reference other builders are written against.
 /// </summary>
 public static class InsomniaBuilder
 {
     private const string WorkspaceId = "wrk_sleepy";
     private const string EnvironmentId = "env_sleepy_base";
     private const string ExportDate = "2020-01-01T00:00:00Z";
-    private const string DefaultTitle = "OpenAPI Import";
-    private const string DefaultTag = "default";
-    private const string BearerVariable = "bearer";
-    private const string BaseUrlVariable = "baseUrl";
-
-    private static readonly string[] HttpMethods = ["get", "post", "put", "delete", "patch"];
-
-    private sealed record Operation(
-        string Method,
-        string Path,
-        string Tag,
-        string OperationId,
-        string Summary,
-        JsonNode? Node);
 
     public static JsonNode Build(IReadOnlyList<ApiModule> modules, BuildOptions options)
     {
@@ -59,7 +21,7 @@ public static class InsomniaBuilder
         // A single module keeps the original flat shape: tag folders straight under
         // the workspace, and unprefixed resource ids.
         var multiModule = modules.Count > 1;
-        var baseUrlVariables = ResolveBaseUrlVariables(modules);
+        var baseUrlVariables = CollectionPlan.ResolveBaseUrlVariables(modules);
 
         var resources = new JsonArray();
         resources.Add((JsonNode)BuildWorkspace(modules, options.WorkspaceName));
@@ -71,11 +33,9 @@ public static class InsomniaBuilder
         {
             var module = modules[moduleIndex];
             var moduleSlug = multiModule ? Slug.Make(module.Name) : string.Empty;
-            var operations = CollectOperations(module.Spec);
+            var operations = Operations.Collect(module.Spec);
 
-            // A module that declares no paths would only contribute an empty
-            // folder; several real APIs ship placeholder modules like that.
-            if (multiModule && operations.Count == 0)
+            if (!CollectionPlan.Contributes(module, modules.Count))
             {
                 continue;
             }
@@ -147,53 +107,16 @@ public static class InsomniaBuilder
         };
     }
 
-    /// <summary>Counts the operations a module contributes, for display purposes.</summary>
-    public static int CountOperations(ApiModule module) => CollectOperations(module.Spec).Count;
-
-    /// <summary>
-    /// Maps each module to the environment variable holding its base URL. Modules
-    /// that share an origin share one <c>baseUrl</c> variable; when the origins
-    /// differ, each module gets its own <c>baseUrl_&lt;module&gt;</c>.
-    /// </summary>
-    private static string[] ResolveBaseUrlVariables(IReadOnlyList<ApiModule> modules)
-    {
-        var origins = modules
-            .Select(module => module.BaseUrl)
-            .Where(baseUrl => baseUrl.Length > 0)
-            .Distinct(StringComparer.Ordinal)
-            .ToList();
-
-        var shared = origins.Count <= 1;
-        return modules
-            .Select(module => shared ? BaseUrlVariable : $"{BaseUrlVariable}_{Slug.Make(module.Name)}")
-            .ToArray();
-    }
-
     private static JsonObject BuildWorkspace(IReadOnlyList<ApiModule> modules, string? workspaceName)
-    {
-        var name = workspaceName;
-        if (string.IsNullOrEmpty(name) && modules.Count == 1)
-        {
-            name = Json.GetString(Json.Get(modules[0].Spec, "info"), "title");
-        }
-
-        if (string.IsNullOrEmpty(name) && modules.Count > 1)
-        {
-            // Several modules have several titles; the host they were fetched from
-            // is the most useful shared label.
-            name = Uri.TryCreate(modules[0].SourceName, UriKind.Absolute, out var uri) ? uri.Host : null;
-        }
-
-        return new JsonObject
+        => new()
         {
             ["_id"] = WorkspaceId,
             ["_type"] = "workspace",
             ["parentId"] = null,
-            ["name"] = string.IsNullOrEmpty(name) ? DefaultTitle : name,
+            ["name"] = CollectionPlan.ResolveName(modules, workspaceName),
             ["description"] = string.Empty,
             ["scope"] = "collection",
         };
-    }
 
     private static JsonObject BuildEnvironment(
         IReadOnlyList<ApiModule> modules,
@@ -201,17 +124,10 @@ public static class InsomniaBuilder
         string bearerToken)
     {
         var data = new JsonObject();
-        for (var i = 0; i < modules.Count; i++)
+        foreach (var variable in CollectionPlan.ResolveVariables(modules, baseUrlVariables, bearerToken))
         {
-            data[baseUrlVariables[i]] = modules[i].BaseUrl;
+            data[variable.Key] = variable.Value;
         }
-
-        if (data.Count == 0)
-        {
-            data[BaseUrlVariable] = string.Empty;
-        }
-
-        data[BearerVariable] = bearerToken;
 
         return new JsonObject
         {
@@ -238,53 +154,6 @@ public static class InsomniaBuilder
                 return next;
             }
         }
-    }
-
-    private static List<Operation> CollectOperations(JsonNode? spec)
-    {
-        var operations = new List<Operation>();
-        if (Json.AsObject(Json.Get(spec, "paths")) is not { } paths)
-        {
-            return operations;
-        }
-
-        var pathKeys = paths.Select(pair => pair.Key).ToList();
-        pathKeys.Sort(StringComparer.Ordinal);
-
-        foreach (var path in pathKeys)
-        {
-            var pathItem = paths[path];
-            foreach (var method in HttpMethods)
-            {
-                if (Json.Get(pathItem, method) is not { } operation)
-                {
-                    continue;
-                }
-
-                var tag = DefaultTag;
-                if (Json.AsArray(Json.Get(operation, "tags")) is { Count: > 0 } tags
-                    && Json.AsString(tags[0]) is { Length: > 0 } firstTag)
-                {
-                    tag = firstTag;
-                }
-
-                var operationId = Json.GetString(operation, "operationId");
-                if (string.IsNullOrEmpty(operationId))
-                {
-                    operationId = $"{method}_{path}";
-                }
-
-                var summary = Json.GetString(operation, "summary");
-                if (string.IsNullOrEmpty(summary))
-                {
-                    summary = Json.GetString(operation, "description") ?? string.Empty;
-                }
-
-                operations.Add(new Operation(method, path, tag, operationId, summary, operation));
-            }
-        }
-
-        return operations;
     }
 
     private static JsonObject BuildRequest(
@@ -328,7 +197,7 @@ public static class InsomniaBuilder
             ["authentication"] = new JsonObject
             {
                 ["type"] = "bearer",
-                ["token"] = "{{ _." + BearerVariable + " }}",
+                ["token"] = "{{ _." + CollectionPlan.BearerVariable + " }}",
             },
             ["body"] = body,
         };

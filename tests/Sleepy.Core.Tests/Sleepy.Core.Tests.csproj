@@ -16,7 +16,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../../src/Sleepy.Core/Discovery/Sleepy.Discovery.csproj" />
+    <ProjectReference Include="../../src/Sleepy.Core/OpenApi/Sleepy.OpenApi.csproj" />
+    <ProjectReference Include="../../src/Sleepy.Core/Serialization/Sleepy.Serialization.csproj" />
     <ProjectReference Include="../../src/Sleepy.Core/Sleepy.Core.csproj" />
+    <ProjectReference Include="../../src/Sleepy.Core/Builders/Sleepy.Builders.csproj" />
   </ItemGroup>
 
   <ItemGroup>

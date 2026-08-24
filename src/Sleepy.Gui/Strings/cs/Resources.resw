@@ -285,4 +285,19 @@
   <data name="About_Close" xml:space="preserve">
     <value>Zavřít</value>
   </data>
+  <data name="FormatLabel.Text" xml:space="preserve">
+    <value>Formát výstupu</value>
+  </data>
+  <data name="Status_SavedFiles" xml:space="preserve">
+    <value>Uloženo {0} souborů do {1}</value>
+  </data>
+  <data name="About_License" xml:space="preserve">
+    <value>LICENCE</value>
+  </data>
+  <data name="About_ThirdParty" xml:space="preserve">
+    <value>KOMPONENTY TŘETÍCH STRAN</value>
+  </data>
+  <data name="About_SettingsPath" xml:space="preserve">
+    <value>Nastavení je uloženo v {0}</value>
+  </data>
 </root>

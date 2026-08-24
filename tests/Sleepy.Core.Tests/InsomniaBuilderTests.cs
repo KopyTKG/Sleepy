@@ -226,7 +226,7 @@ public class InsomniaBuilderTests
 
     [Fact]
     public void CountsOperationsForDisplay()
-        => Assert.Equal(4, InsomniaBuilder.CountOperations(Module("Admin", AdminSpec)));
+        => Assert.Equal(4, Operations.Count(Module("Admin", AdminSpec)));
 
     [Fact]
     public void SkipsModulesThatDeclareNoPaths()

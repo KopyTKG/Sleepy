@@ -2,7 +2,7 @@ using System.Text;
 
 namespace Sleepy;
 
-internal static class Slug
+public static class Slug
 {
     /// <summary>
     /// Lowercases the input and replaces every run of non-alphanumeric

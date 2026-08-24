@@ -110,6 +110,13 @@
           <TextBlock x:Uid="OutputHeader" Text="OUTPUT" Style="{StaticResource SectionHeaderStyle}" />
 
           <StackPanel>
+            <TextBlock x:Uid="FormatLabel" Text="Output format" Style="{StaticResource FieldLabelStyle}" />
+            <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Formats}"
+                      SelectedIndex="{Binding FormatIndex, Mode=TwoWay}"
+                      IsEnabled="{Binding HasModules}" />
+          </StackPanel>
+
+          <StackPanel>
             <TextBlock x:Uid="FolderLayoutLabel" Text="Folder layout" Style="{StaticResource FieldLabelStyle}" />
             <ComboBox HorizontalAlignment="Stretch" SelectedIndex="{Binding LayoutIndex, Mode=TwoWay}"
                       IsEnabled="{Binding HasModules}">
@@ -148,7 +155,8 @@
         <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,2,0,0"
                     Visibility="{Binding HasResult, Converter={StaticResource BoolToVisibility}}">
           <Button x:Uid="SaveButton" Content="Save export…" Click="OnSaveClick" Style="{StaticResource AccentButtonStyle}" />
-          <Button x:Uid="CopyButton" Content="Copy JSON" Click="OnCopyClick" />
+          <Button x:Uid="CopyButton" Content="Copy JSON" Click="OnCopyClick"
+                  Visibility="{Binding IsFolderFormat, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}" />
         </StackPanel>
 
       </StackPanel>
@@ -178,13 +186,13 @@
           </StackPanel>
         </Grid>
 
-        <TextBox Grid.Row="1" Text="{Binding Preview}" IsReadOnly="True" AcceptsReturn="True"
-                 Padding="20,0,20,20" FontFamily="Consolas, monospace" FontSize="12.5"
-                 Background="Transparent" BorderThickness="0" TextWrapping="NoWrap"
-                 Foreground="{StaticResource CodeTextBrush}"
-                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                 ScrollViewer.VerticalScrollBarVisibility="Auto"
-                 Visibility="{Binding HasResult, Converter={StaticResource BoolToVisibility}}" />
+        <!-- Coloured in code-behind: the runs come from the tokenizer, so the
+             same view renders a JSON export and a Bruno file alike. -->
+        <ScrollViewer Grid.Row="1" Padding="20,0,20,20"
+                      HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                      Visibility="{Binding HasResult, Converter={StaticResource BoolToVisibility}}">
+          <StackPanel x:Name="PreviewText" Orientation="Vertical" />
+        </ScrollViewer>
 
         <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="6"
                     Visibility="{Binding HasResult, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">

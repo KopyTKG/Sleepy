@@ -279,4 +279,19 @@
   <data name="About_Close" xml:space="preserve">
     <value>Close</value>
   </data>
+  <data name="FormatLabel.Text" xml:space="preserve">
+    <value>Output format</value>
+  </data>
+  <data name="Status_SavedFiles" xml:space="preserve">
+    <value>Saved {0} files to {1}</value>
+  </data>
+  <data name="About_License" xml:space="preserve">
+    <value>LICENCE</value>
+  </data>
+  <data name="About_ThirdParty" xml:space="preserve">
+    <value>THIRD-PARTY COMPONENTS</value>
+  </data>
+  <data name="About_SettingsPath" xml:space="preserve">
+    <value>Preferences are kept in {0}</value>
+  </data>
 </root>
