@@ -102,7 +102,13 @@ public class UserSettingsFileTests : IDisposable
         var path = UserSettingsFile.DefaultPath;
 
         Assert.EndsWith(System.IO.Path.Combine("sleepy", "settings.json"), path, StringComparison.Ordinal);
-        Assert.True(System.IO.Path.IsPathRooted(path));
+
+        // Absolute even where the environment reports no home directory, which is
+        // the normal state of a build container: a relative path would scatter
+        // settings files through whatever directory the app started in.
+        Assert.True(
+            System.IO.Path.IsPathRooted(path),
+            $"the settings path must be absolute, but was '{path}'");
     }
 
     public void Dispose()

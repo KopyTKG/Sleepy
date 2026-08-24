@@ -16,10 +16,31 @@ public static class UserSettingsFile
     /// which is <c>~/.config/sleepy</c> on Linux and <c>%AppData%\sleepy</c> on
     /// Windows.
     /// </summary>
-    public static string DefaultPath => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "sleepy",
-        "settings.json");
+    public static string DefaultPath => Path.Combine(ConfigurationDirectory(), "sleepy", "settings.json");
+
+    /// <summary>
+    /// The per-user configuration directory, always absolute.
+    ///
+    /// A container with no HOME reports no application data directory at all,
+    /// and a relative path here would scatter settings files through whatever
+    /// directory the app happened to start in.
+    /// </summary>
+    private static string ConfigurationDirectory()
+    {
+        var applicationData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        if (!string.IsNullOrEmpty(applicationData))
+        {
+            return applicationData;
+        }
+
+        var home = Environment.GetEnvironmentVariable("HOME");
+        if (!string.IsNullOrEmpty(home))
+        {
+            return Path.Combine(home, ".config");
+        }
+
+        return Path.GetTempPath();
+    }
 
     public static UserSettings Read(string path)
     {
