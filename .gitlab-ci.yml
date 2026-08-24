@@ -127,25 +127,64 @@ upload:
       done
 
 # Cut the Release that links to the uploaded packages. Only runs on tags.
+#
+# Done with the API rather than the `release:` keyword so that re-running a tag
+# pipeline is safe: the keyword refuses when a release already exists, which is
+# exactly what a re-run finds. Creating is tried first, updating second, and the
+# asset links are added only when they are missing.
 release:
   stage: release
-  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  image: curlimages/curl:latest
   needs:
     - job: upload
       artifacts: false
   rules:
     - if: "$CI_COMMIT_TAG"
+  variables:
+    PACKAGE_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${PACKAGE_NAME}/${CI_COMMIT_TAG}"
   script:
-    - echo "creating the release for $CI_COMMIT_TAG"
-  release:
-    tag_name: "$CI_COMMIT_TAG"
-    name: "sleepy $CI_COMMIT_TAG"
-    description: "Automated release of sleepy $CI_COMMIT_TAG (CLI + desktop app)."
-    assets:
-      links:
-        - name: "sleepy CLI (linux-x64)"
-          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${PACKAGE_NAME}/${CI_COMMIT_TAG}/sleepy"
-        - name: "sleepy-GUI (linux-x64)"
-          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${PACKAGE_NAME}/${CI_COMMIT_TAG}/sleepy-gui-linux-x64.tar.gz"
-        - name: "sleepy-GUI (win-x64)"
-          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${PACKAGE_NAME}/${CI_COMMIT_TAG}/sleepy-gui-win-x64.zip"
+    - |
+      set -eu
+      api="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases"
+      auth="JOB-TOKEN: $CI_JOB_TOKEN"
+      description="Automated release of sleepy ${CI_COMMIT_TAG} (CLI + desktop app)."
+
+      body=$(printf '{"name":"sleepy %s","tag_name":"%s","description":"%s"}' \
+        "$CI_COMMIT_TAG" "$CI_COMMIT_TAG" "$description")
+
+      status=$(curl --silent --output /tmp/release.json --write-out '%{http_code}' \
+        --request POST --header "$auth" --header "Content-Type: application/json" \
+        --data "$body" "$api")
+      echo "create release: HTTP $status"
+
+      if [ "$status" = "409" ]; then
+        echo "release exists; updating it instead"
+        curl --fail --silent --show-error --output /dev/null \
+          --request PUT --header "$auth" --header "Content-Type: application/json" \
+          --data "$body" "$api/${CI_COMMIT_TAG}"
+      elif [ "$status" != "201" ]; then
+        cat /tmp/release.json
+        exit 1
+      fi
+
+      existing=$(curl --silent --header "$auth" "$api/${CI_COMMIT_TAG}/assets/links")
+      for asset in sleepy sleepy-gui-linux-x64.tar.gz sleepy-gui-win-x64.zip; do
+        case "$asset" in
+          sleepy) label="sleepy CLI (linux-x64)" ;;
+          sleepy-gui-linux-x64.tar.gz) label="sleepy-GUI (linux-x64)" ;;
+          *) label="sleepy-GUI (win-x64)" ;;
+        esac
+
+        if echo "$existing" | grep -q "$PACKAGE_URL/$asset\""; then
+          echo "link already present: $label"
+          continue
+        fi
+
+        echo "adding link: $label"
+        curl --fail --silent --show-error --output /dev/null \
+          --request POST --header "$auth" \
+          --data-urlencode "name=$label" \
+          --data-urlencode "url=$PACKAGE_URL/$asset" \
+          --data "link_type=package" \
+          "$api/${CI_COMMIT_TAG}/assets/links"
+      done
