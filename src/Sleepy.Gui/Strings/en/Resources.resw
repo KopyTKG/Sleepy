@@ -294,4 +294,25 @@
   <data name="About_SettingsPath" xml:space="preserve">
     <value>Preferences are kept in {0}</value>
   </data>
+  <data name="ApplyButton.Content" xml:space="preserve">
+    <value>Apply</value>
+  </data>
+  <data name="PendingHint.Text" xml:space="preserve">
+    <value>unapplied changes</value>
+  </data>
+  <data name="Pending_Title" xml:space="preserve">
+    <value>Unapplied changes</value>
+  </data>
+  <data name="Pending_Message" xml:space="preserve">
+    <value>The workspace name, base URL or bearer token has been edited but not applied, so the export would not match the fields above.</value>
+  </data>
+  <data name="Pending_ApplyAndContinue" xml:space="preserve">
+    <value>Apply and continue</value>
+  </data>
+  <data name="Pending_ContinueAnyway" xml:space="preserve">
+    <value>Continue without applying</value>
+  </data>
+  <data name="Pending_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
 </root>

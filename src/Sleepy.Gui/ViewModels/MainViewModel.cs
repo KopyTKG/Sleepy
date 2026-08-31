@@ -16,6 +16,13 @@ public partial class MainViewModel : ObservableObject
 {
     private readonly List<ApiModule> _loaded = [];
 
+    // What the last Apply used. The text fields above are drafts until then:
+    // re-converting on every keystroke rebuilt the whole preview, which is a lot
+    // of work to do between two letters of a workspace name.
+    private string _appliedWorkspaceName = string.Empty;
+    private string _appliedBaseUrl = string.Empty;
+    private string _appliedBearerToken = string.Empty;
+
     /// <summary>
     /// Shared so that re-navigating the page — which is how a language change is
     /// applied — does not throw away what the user has loaded.
@@ -103,6 +110,16 @@ public partial class MainViewModel : ObservableObject
     public ICollectionBuilder Format =>
         CollectionBuilders.All[Math.Clamp(FormatIndex, 0, CollectionBuilders.All.Count - 1)];
 
+    /// <summary>
+    /// Whether the text fields hold something the preview has not been built
+    /// from yet.
+    /// </summary>
+    public bool HasPendingChanges =>
+        HasModules
+        && (!string.Equals(WorkspaceName, _appliedWorkspaceName, StringComparison.Ordinal)
+            || !string.Equals(BaseUrl, _appliedBaseUrl, StringComparison.Ordinal)
+            || !string.Equals(BearerToken, _appliedBearerToken, StringComparison.Ordinal));
+
     /// <summary>The folder layout the picker is on.</summary>
     public FolderLayout Layout => LayoutIndex switch
     {
@@ -163,6 +180,7 @@ public partial class MainViewModel : ObservableObject
 
             HasModules = Modules.Count > 0;
             HasSeveralModules = Modules.Count > 1;
+            OnPropertyChanged(nameof(HasPendingChanges));
             SourceLabel = input;
 
             if (string.IsNullOrWhiteSpace(BaseUrl))
@@ -176,6 +194,8 @@ public partial class MainViewModel : ObservableObject
             }
 
             var requestCount = Modules.Sum(module => module.RequestCount);
+            Apply();
+
             SetStatus(Modules.Count == 1
                 ? Localizer.Format(
                     "Status_LoadedSingle", Modules[0].Name, Localizer.Count("Count_Requests", requestCount))
@@ -184,7 +204,6 @@ public partial class MainViewModel : ObservableObject
                     Localizer.Count("Count_Modules", Modules.Count),
                     Localizer.Count("Count_Requests", requestCount)));
 
-            Convert();
         }
         catch (SleepyException exception)
         {
@@ -206,6 +225,22 @@ public partial class MainViewModel : ObservableObject
         {
             IsBusy = false;
         }
+    }
+
+    /// <summary>Takes what is typed and rebuilds the collection from it.</summary>
+    [RelayCommand]
+    public void Apply()
+    {
+        _appliedWorkspaceName = WorkspaceName;
+        _appliedBaseUrl = BaseUrl;
+        _appliedBearerToken = BearerToken;
+
+        OutputFileName = string.IsNullOrWhiteSpace(_appliedWorkspaceName)
+            ? Format.DefaultOutputName
+            : NameFor(_appliedWorkspaceName);
+
+        OnPropertyChanged(nameof(HasPendingChanges));
+        Convert();
     }
 
     [RelayCommand]
@@ -231,9 +266,11 @@ public partial class MainViewModel : ObservableObject
         var collection = Format.Build(selected, new BuildOptions
         {
             SourceName = string.IsNullOrWhiteSpace(SourceLabel) ? "gui" : SourceLabel,
-            WorkspaceName = string.IsNullOrWhiteSpace(WorkspaceName) ? null : WorkspaceName.Trim(),
+            WorkspaceName = string.IsNullOrWhiteSpace(_appliedWorkspaceName)
+                ? null
+                : _appliedWorkspaceName.Trim(),
             Layout = Layout,
-            BearerToken = BearerToken,
+            BearerToken = _appliedBearerToken,
         });
 
         Collection = collection;
@@ -277,7 +314,9 @@ public partial class MainViewModel : ObservableObject
 
     /// <summary>Applies the base URL override, if the user typed one.</summary>
     private ApiModule ApplyBaseUrl(ApiModule module)
-        => string.IsNullOrWhiteSpace(BaseUrl) ? module : module with { BaseUrl = BaseUrl.Trim() };
+        => string.IsNullOrWhiteSpace(_appliedBaseUrl)
+            ? module
+            : module with { BaseUrl = _appliedBaseUrl.Trim() };
 
     public async Task SaveAsync(string path)
     {
@@ -385,19 +424,13 @@ public partial class MainViewModel : ObservableObject
         Settings.Update(settings => settings with { Format = Format.FormatId });
 
         // Keep the name the user chose; only its extension belongs to the format.
-        OutputFileName = string.IsNullOrWhiteSpace(WorkspaceName)
+        OutputFileName = string.IsNullOrWhiteSpace(_appliedWorkspaceName)
             ? Format.DefaultOutputName
-            : NameFor(WorkspaceName);
+            : NameFor(_appliedWorkspaceName);
         Convert();
     }
 
-    partial void OnWorkspaceNameChanged(string value)
-    {
-        OutputFileName = string.IsNullOrWhiteSpace(value)
-            ? Format.DefaultOutputName
-            : NameFor(value);
-        Convert();
-    }
+    partial void OnWorkspaceNameChanged(string value) => OnPropertyChanged(nameof(HasPendingChanges));
 
     /// <summary>The suggested output name for a named collection, in the chosen format.</summary>
     private string NameFor(string workspaceName)
@@ -407,9 +440,9 @@ public partial class MainViewModel : ObservableObject
         return extension.Length == 0 ? stem : stem + extension;
     }
 
-    partial void OnBearerTokenChanged(string value) => Convert();
+    partial void OnBearerTokenChanged(string value) => OnPropertyChanged(nameof(HasPendingChanges));
 
-    partial void OnBaseUrlChanged(string value) => Convert();
+    partial void OnBaseUrlChanged(string value) => OnPropertyChanged(nameof(HasPendingChanges));
 
     private static string Slugify(string value)
     {

@@ -128,14 +128,14 @@
 
           <StackPanel>
             <TextBlock x:Uid="WorkspaceNameLabel" Text="Workspace name" Style="{StaticResource FieldLabelStyle}" />
-            <TextBox x:Uid="WorkspaceNameBox" PlaceholderText="defaults to the spec title"
+            <TextBox x:Uid="WorkspaceNameBox" KeyDown="OnOutputFieldKeyDown" PlaceholderText="defaults to the spec title"
                      Text="{Binding WorkspaceName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                      IsEnabled="{Binding HasModules}" />
           </StackPanel>
 
           <StackPanel>
             <TextBlock x:Uid="BaseUrlLabel" Text="Base URL" Style="{StaticResource FieldLabelStyle}" />
-            <TextBox x:Uid="BaseUrlBox" PlaceholderText="https://api.example.com"
+            <TextBox x:Uid="BaseUrlBox" KeyDown="OnOutputFieldKeyDown" PlaceholderText="https://api.example.com"
                      Text="{Binding BaseUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                      IsEnabled="{Binding HasModules}" />
           </StackPanel>
@@ -146,10 +146,19 @@
               <TextBlock x:Uid="BearerOptionalLabel" Text="(optional)" Style="{StaticResource FieldLabelStyle}"
                          Foreground="{StaticResource MutedTextBrush}" />
             </StackPanel>
-            <TextBox x:Uid="BearerTokenBox" PlaceholderText="prefills the bearer environment variable"
+            <TextBox x:Uid="BearerTokenBox" KeyDown="OnOutputFieldKeyDown" PlaceholderText="prefills the bearer environment variable"
                      Text="{Binding BearerToken, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                      IsEnabled="{Binding HasModules}" />
           </StackPanel>
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,2,0,0"
+                    Visibility="{Binding HasModules, Converter={StaticResource BoolToVisibility}}">
+          <Button x:Uid="ApplyButton" Content="Apply" Click="OnApplyClick" MinWidth="72"
+                  IsEnabled="{Binding HasPendingChanges}" />
+          <TextBlock x:Uid="PendingHint" Text="unapplied changes" FontSize="11" VerticalAlignment="Center"
+                     Foreground="{StaticResource MutedTextBrush}"
+                     Visibility="{Binding HasPendingChanges, Converter={StaticResource BoolToVisibility}}" />
         </StackPanel>
 
         <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,2,0,0"

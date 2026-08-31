@@ -154,8 +154,63 @@ public sealed partial class MainPage : Page
         }
     }
 
+    private void OnApplyClick(object sender, RoutedEventArgs e) => ViewModel.Apply();
+
+    /// <summary>Enter in an output field applies it, the way Enter loads a source.</summary>
+    private void OnOutputFieldKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == Windows.System.VirtualKey.Enter)
+        {
+            e.Handled = true;
+            ViewModel.Apply();
+        }
+    }
+
+    /// <summary>
+    /// Asks what to do about text that was typed but never applied, so an export
+    /// cannot quietly disagree with the fields above it.
+    /// </summary>
+    private async Task<bool> ResolvePendingChangesAsync()
+    {
+        if (!ViewModel.HasPendingChanges)
+        {
+            return true;
+        }
+
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            Title = Localizer.Get("Pending_Title"),
+            Content = new TextBlock
+            {
+                Text = Localizer.Get("Pending_Message"),
+                TextWrapping = TextWrapping.Wrap,
+            },
+            PrimaryButtonText = Localizer.Get("Pending_ApplyAndContinue"),
+            SecondaryButtonText = Localizer.Get("Pending_ContinueAnyway"),
+            CloseButtonText = Localizer.Get("Pending_Cancel"),
+            DefaultButton = ContentDialogButton.Primary,
+        };
+
+        switch (await dialog.ShowAsync())
+        {
+            case ContentDialogResult.Primary:
+                ViewModel.Apply();
+                return true;
+            case ContentDialogResult.Secondary:
+                return true;
+            default:
+                return false;
+        }
+    }
+
     private async void OnSaveClick(object sender, RoutedEventArgs e)
     {
+        if (!await ResolvePendingChangesAsync())
+        {
+            return;
+        }
+
         if (ViewModel.IsFolderFormat)
         {
             await SaveToFolderAsync();
@@ -206,8 +261,13 @@ public sealed partial class MainPage : Page
         }
     }
 
-    private void OnCopyClick(object sender, RoutedEventArgs e)
+    private async void OnCopyClick(object sender, RoutedEventArgs e)
     {
+        if (!await ResolvePendingChangesAsync())
+        {
+            return;
+        }
+
         var package = new DataPackage();
         package.SetText(ViewModel.ExportJson);
         Clipboard.SetContent(package);
