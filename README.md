@@ -395,7 +395,7 @@ output changes on purpose, re-record it with `just bless` and read the diff.
 | `src/Sleepy.Gui/Platforms/Desktop/Program.cs` | desktop host selection (`--display`) |
 | `src/Sleepy.Gui/Strings/` | English and Czech resources |
 | `packaging/linux/` | X11 / Wayland / console launchers, desktop entries, installer |
-| `packaging/aur/` | PKGBUILDs for `sleepy-bin` and `sleepy-gui-bin` |
+| `packaging/aur/` | PKGBUILDs for `sleepy-bin` and `sleepy-gui-bin`, and how to publish them |
 | `tests/Sleepy.Core.Tests/` | engine tests, including the golden export fixture |
 | `icon.png` | app artwork; Uno.Resizetizer generates every icon size from it |
 | `justfile`, `mise.toml` | task runner and pinned toolchain |

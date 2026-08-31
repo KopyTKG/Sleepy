@@ -160,6 +160,35 @@ aur version:
         echo "$file -> {{version}}"
     done
 
+# Push the AUR packages from this machine. Needs an AUR account whose SSH key
+# is registered; see packaging/aur/README.md.
+aur-publish version:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    just aur {{version}}
+
+    work=$(mktemp -d)
+    trap 'rm -rf "$work"' EXIT
+
+    for package in sleepy-bin sleepy-gui-bin; do
+        echo "==> $package"
+        git clone --quiet "ssh://aur@aur.archlinux.org/$package.git" "$work/$package"
+        cp "packaging/aur/$package/PKGBUILD" "$work/$package/PKGBUILD"
+
+        (
+            cd "$work/$package"
+            makepkg --printsrcinfo > .SRCINFO
+            git add PKGBUILD .SRCINFO
+            if git diff --cached --quiet; then
+                echo "    already at {{version}}"
+            else
+                git commit -qm "Update to {{version}}"
+                git push --quiet
+                echo "    pushed {{version}}"
+            fi
+        )
+    done
+
 # Build the AUR packages locally, to check them before they reach anyone.
 aur-check:
     #!/usr/bin/env bash
