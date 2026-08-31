@@ -1,6 +1,6 @@
 # Maintainer: Martin Kopecký <bulikopm@gmail.com>
 pkgname=sleepy-bin
-pkgver=0.6.0
+pkgver=0.6.1
 pkgrel=1
 pkgdesc='Convert OpenAPI 3 specifications into Insomnia, Postman or Bruno collections'
 arch=('x86_64')
@@ -14,7 +14,7 @@ _registry="https://gitlab.com/api/v4/projects/84670021/packages/generic/sleepy"
 source=("sleepy-$pkgver::$_registry/v$pkgver/sleepy"
         "LICENSE-$pkgver::$url/-/raw/v$pkgver/LICENSE")
 noextract=("sleepy-$pkgver")
-sha256sums=('b525a93470f70170afe4da0be37f512e43dcb8c63221aa7259e9c8fff899b6a7'
+sha256sums=('5b39e20d96d941e1dc98b402a53ef08b1a6cdbfb36b68efcf6e8d87cc9170184'
             '765f202dfca30d8f4370bed3870c01b4fb40f7e4070d6cd84e24b250aebf2f69')
 
 package() {

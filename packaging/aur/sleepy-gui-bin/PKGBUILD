@@ -1,6 +1,6 @@
 # Maintainer: Martin Kopecký <bulikopm@gmail.com>
 pkgname=sleepy-gui-bin
-pkgver=0.6.0
+pkgver=0.6.1
 pkgrel=1
 pkgdesc='Desktop app converting OpenAPI 3 specifications into Insomnia, Postman or Bruno collections'
 arch=('x86_64')
@@ -16,7 +16,7 @@ options=('!strip')
 _registry="https://gitlab.com/api/v4/projects/84670021/packages/generic/sleepy"
 source=("sleepy-gui-$pkgver.tar.gz::$_registry/v$pkgver/sleepy-gui-linux-x64.tar.gz"
         "LICENSE-$pkgver::$url/-/raw/v$pkgver/LICENSE")
-sha256sums=('d4f7938ca36253ccfce105a7644d680b415ee687b6e4574e4251d5ea6b8f31c5'
+sha256sums=('92fab209b6de8c5940c85f2258381bf4f63c34c262bcbfb635718b0055fde7d7'
             '765f202dfca30d8f4370bed3870c01b4fb40f7e4070d6cd84e24b250aebf2f69')
 
 package() {
