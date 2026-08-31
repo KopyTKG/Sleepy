@@ -6,6 +6,28 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.6.1] — 2026-08-31
+
+### Added
+
+- **AUR packages**: `sleepy-bin` and `sleepy-gui-bin`, built from the released
+  assets. A tag pipeline updates them when an AUR SSH key is configured;
+  `just aur <version>` does the same locally, and `just aur-check` builds both
+  with makepkg before anyone else sees them.
+
+### Changed
+
+- The desktop app's text fields — workspace name, base URL, bearer token — are
+  applied with a button or Enter rather than on every keystroke. Rebuilding the
+  collection and re-rendering a syntax-highlighted preview between two letters of
+  a name made typing lag. Saving or copying with an unapplied edit asks what to
+  do rather than exporting something that disagrees with the fields on screen.
+
+### Fixed
+
+- The desktop launchers resolve symlinks, so a package can put a link in
+  `/usr/bin` while the app lives elsewhere.
+
 ## [0.6.0] — 2026-08-24
 
 ### Added
@@ -95,7 +117,8 @@ Rewritten from Odin to C#. Single-spec output is byte-identical to 0.2.0.
   export, with tag folders, bearer authentication, and generated request-body
   examples.
 
-[Unreleased]: https://gitlab.com/kopytkg/sleepy/-/compare/v0.6.0...main
+[Unreleased]: https://gitlab.com/kopytkg/sleepy/-/compare/v0.6.1...main
+[0.6.1]: https://gitlab.com/kopytkg/sleepy/-/releases/v0.6.1
 [0.6.0]: https://gitlab.com/kopytkg/sleepy/-/releases/v0.6.0
 [0.5.0]: https://gitlab.com/kopytkg/sleepy/-/releases/v0.5.0
 [0.2.0]: https://gitlab.com/kopytkg/sleepy/-/releases/v0.2.0

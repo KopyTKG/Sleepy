@@ -6,7 +6,17 @@
 # compositor in common use ships XWayland, so this works out of the box; it is
 # only called out so the window type is no surprise.
 set -e
-here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+# Resolve through symlinks: distribution packages put a link in /usr/bin while
+# the app itself lives elsewhere.
+self=$0
+while [ -L "$self" ]; do
+  link=$(readlink "$self")
+  case "$link" in
+    /*) self=$link ;;
+    *) self=$(dirname "$self")/$link ;;
+  esac
+done
+here=$(CDPATH= cd -- "$(dirname -- "$self")" && pwd)
 
 if [ -z "$WAYLAND_DISPLAY" ]; then
   echo "sleepy-GUI: no WAYLAND_DISPLAY — use sleepy-gui-x11 on an X11 session." >&2

@@ -135,6 +135,43 @@ set-version version:
 version:
     @dotnet run --project {{cli}} -c {{configuration}} -- --version
 
+# Point the AUR packages at a released version, checksums and all.
+aur version:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    registry="https://gitlab.com/api/v4/projects/84670021/packages/generic/sleepy/v{{version}}"
+    work=$(mktemp -d)
+    trap 'rm -rf "$work"' EXIT
+
+    curl --fail --silent --show-error --location -o "$work/sleepy" "$registry/sleepy"
+    curl --fail --silent --show-error --location -o "$work/gui.tar.gz" "$registry/sleepy-gui-linux-x64.tar.gz"
+    curl --fail --silent --show-error --location -o "$work/LICENSE"         "https://gitlab.com/kopytkg/sleepy/-/raw/v{{version}}/LICENSE"
+
+    cli=$(sha256sum "$work/sleepy" | cut -d' ' -f1)
+    gui=$(sha256sum "$work/gui.tar.gz" | cut -d' ' -f1)
+    licence=$(sha256sum "$work/LICENSE" | cut -d' ' -f1)
+
+    for package in sleepy-bin sleepy-gui-bin; do
+        file="packaging/aur/$package/PKGBUILD"
+        sed -i "s|^pkgver=.*|pkgver={{version}}|; s|^pkgrel=.*|pkgrel=1|" "$file"
+        if [ "$package" = "sleepy-bin" ]; then asset="$cli"; else asset="$gui"; fi
+        sed -i "0,/^sha256sums=(/{s|^sha256sums=('.*'|sha256sums=('$asset'|}" "$file"
+        sed -i "s|^            '.*')|            '$licence')|" "$file"
+        echo "$file -> {{version}}"
+    done
+
+# Build the AUR packages locally, to check them before they reach anyone.
+aur-check:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for package in sleepy-bin sleepy-gui-bin; do
+        work=$(mktemp -d)
+        cp "packaging/aur/$package/PKGBUILD" "$work/"
+        (cd "$work" && makepkg --nodeps --clean)
+        echo "built: $(ls "$work"/*.pkg.tar.zst)"
+        rm -rf "$work"
+    done
+
 # Tag the current commit; CI builds and publishes the release from the tag.
 tag version:
     @test -z "$(git status --porcelain)" || { echo "working tree is dirty"; exit 1; }

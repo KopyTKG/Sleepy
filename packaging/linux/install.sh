@@ -2,7 +2,17 @@
 # Installs sleepy-GUI for the current user: the app under
 # ~/.local/share/sleepy-gui, launchers on PATH, and both desktop entries.
 set -e
-here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+# Resolve through symlinks: distribution packages put a link in /usr/bin while
+# the app itself lives elsewhere.
+self=$0
+while [ -L "$self" ]; do
+  link=$(readlink "$self")
+  case "$link" in
+    /*) self=$link ;;
+    *) self=$(dirname "$self")/$link ;;
+  esac
+done
+here=$(CDPATH= cd -- "$(dirname -- "$self")" && pwd)
 prefix="${PREFIX:-$HOME/.local}"
 
 app_dir="$prefix/share/sleepy-gui"

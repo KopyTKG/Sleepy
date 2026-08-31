@@ -15,6 +15,19 @@ Two apps share one engine:
 | **`sleepy`** | command line tool, shipped as a single native binary |
 | **`sleepy-GUI`** | desktop app ([Uno Platform](https://platform.uno/)) for Linux and Windows |
 
+## Install
+
+On Arch and derivatives, from the AUR:
+
+```sh
+paru -S sleepy-bin        # the command line tool
+paru -S sleepy-gui-bin    # the desktop app
+```
+
+Otherwise take the binary or the desktop bundle from the
+[latest release](https://gitlab.com/kopytkg/sleepy/-/releases), or build from
+source as below.
+
 ## Quick start
 
 ```sh
@@ -161,11 +174,16 @@ Enter — and every module it finds is loaded. Then:
 - pick the **folder layout**: module folders with tag subfolders, flat
   `"Module / Tag"` folders, or module folders only;
 - set the **workspace name**, **base URL**, and optionally a **bearer token**
-  written straight into the environment;
+  written straight into the environment, then press **Apply** (or Enter in the
+  field) — text fields are applied on request rather than on every keystroke, so
+  typing a name does not rebuild the preview eleven times;
 - open **Fetch options** for a request header (e.g. `Authorization: Bearer …`)
   or to ignore TLS certificate errors while fetching;
 - watch the preview — syntax-highlighted, with collapsible blocks and a request
   count — follow every change, then **Save export…** or **Copy JSON**.
+
+Saving or copying with an edit that was never applied asks first, so an export
+cannot quietly disagree with the fields above it.
 
 Choosing Bruno turns the save into a folder picker and the preview into the file
 tree it will write, each file under its path — a folder format has nothing single
@@ -326,7 +344,8 @@ just             # list every recipe
 | `just publish-gui-windows` | self-contained Windows app |
 | `just package` | all three, archived exactly as the release job uploads them |
 | `just bless` | re-record the golden export fixture |
-| `just set-version 0.6.0` / `just tag 0.6.0` | bump the version everywhere / tag a release |
+| `just set-version 0.6.1` / `just tag 0.6.1` | bump the version everywhere / tag a release |
+| `just aur 0.6.1` / `just aur-check` | point the PKGBUILDs at a release / build them with makepkg |
 | `just ci` | lint + build + test + package, what CI runs |
 | `just clean` | drop `bin/`, `obj/`, and `dist/` |
 
@@ -376,6 +395,7 @@ output changes on purpose, re-record it with `just bless` and read the diff.
 | `src/Sleepy.Gui/Platforms/Desktop/Program.cs` | desktop host selection (`--display`) |
 | `src/Sleepy.Gui/Strings/` | English and Czech resources |
 | `packaging/linux/` | X11 / Wayland / console launchers, desktop entries, installer |
+| `packaging/aur/` | PKGBUILDs for `sleepy-bin` and `sleepy-gui-bin` |
 | `tests/Sleepy.Core.Tests/` | engine tests, including the golden export fixture |
 | `icon.png` | app artwork; Uno.Resizetizer generates every icon size from it |
 | `justfile`, `mise.toml` | task runner and pinned toolchain |
