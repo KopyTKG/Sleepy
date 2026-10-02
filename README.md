@@ -376,7 +376,7 @@ zlib headers (`apt-get install clang zlib1g-dev` on Debian/Ubuntu). Swap
 target OS. The desktop app has no such restriction and cross-publishes from
 Linux to Windows.
 
-CI runs on Jenkins (`Jenkinsfile`): lint and the tests for every branch and pull
+CI runs on Jenkins (`.jenkins/Jenkinsfile`): lint and the tests for every branch and pull
 request; the three publishes and the GitHub release only for a tag, so branch
 builds stay quick and the binaries are built once, for the release that ships
 them. `ci/github-release.sh` creates or updates the release and its assets, and
@@ -413,7 +413,7 @@ output changes on purpose, re-record it with `just bless` and read the diff.
 | `tests/Sleepy.Core.Tests/` | engine tests, including the golden export fixture |
 | `icon.png` | app artwork; Uno.Resizetizer generates every icon size from it |
 | `justfile`, `mise.toml` | task runner and pinned toolchain |
-| `Jenkinsfile`, `ci/github-release.sh` | CI on Jenkins, and the script that cuts a GitHub release |
+| `.jenkins/Jenkinsfile`, `ci/github-release.sh` | CI on Jenkins, and the script that cuts a GitHub release |
 | `.github/` | issue forms and the pull request template |
 
 ## Scope

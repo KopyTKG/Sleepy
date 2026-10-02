@@ -118,8 +118,8 @@ git push origin main --follow-tags
 
 Jenkins builds the tag, publishes the CLI binary and both desktop archives, and
 creates the GitHub release with that version's changelog section as its notes.
-Once the release is up, `just aur-publish 0.7.0` updates the AUR packages — see
-`packaging/aur/README.md`.
+It then updates the AUR packages from that release; if that stage fails,
+`just aur-publish 0.7.0` does the same by hand — see `packaging/aur/README.md`.
 
 ## Licence
 

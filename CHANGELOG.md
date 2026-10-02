@@ -9,7 +9,7 @@ All notable changes to this project are documented here. The format follows
 ### Changed
 
 - The project moved to GitHub (`KopyTKG/Sleepy`): issue and pull request
-  templates are GitHub's, CI runs on Jenkins (`Jenkinsfile`), and releases are
+  templates are GitHub's, CI runs on Jenkins (`.jenkins/Jenkinsfile`), and releases are
   GitHub releases. The AUR packages download from there from the next release.
 
 ### Added

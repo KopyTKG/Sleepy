@@ -66,17 +66,27 @@ The PKGBUILDs download from the GitHub release for the version, so the release
 has to exist — Jenkins creates it when it builds the tag — before
 `just aur-publish` can take checksums from it.
 
-## Why this is not in CI
+## From Jenkins
 
-Publishing needs your AUR SSH key, and a key with a passphrase cannot be used
-from a build agent. Putting a passphrase-less one into Jenkins would work, but
-whoever can read that credential can then publish packages as you; running one
-command after each release is the safer trade.
+A tag build runs the same `just aur-publish` in its `AUR` stage, right after
+the GitHub release it takes checksums from. It needs:
+
+- the **SSH Agent** plugin, and an *SSH Username with private key* credential
+  with id `aur-ssh` holding the key registered with the AUR account. The key's
+  passphrase goes in the credential, so the key is never stored unlocked —
+  though anyone who can use that credential can publish as you, so keep the job
+  restricted;
+- **makepkg** on the agent, which in practice means an Arch-based agent: it is
+  what writes `.SRCINFO`.
+
+Running `just aur-publish` by hand still works, and is the fallback when the
+stage fails: it is safe to run again, and reports a package already at the
+version instead of pushing twice.
 
 ## Maintaining them
 
 - A package that lags its upstream is worse than no package, so publish each
-  release; `just aur-publish` after the GitHub release is the whole job.
+  release — the Jenkins stage does it, `just aur-publish` when it cannot.
 - `pkgrel` goes up when the packaging changes but the version does not; `just
   aur` resets it to 1 for a new version.
 - Comments on the AUR page are where users report packaging problems, and they

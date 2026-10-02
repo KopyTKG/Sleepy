@@ -1,0 +1,125 @@
+// Jenkins pipeline for sleepy. In the job, set Script Path to .jenkins/Jenkinsfile.
+//
+// - Lint and Test run for every branch and pull request.
+// - Publish and Release run only for a tag (v0.7.0 and so on).
+// - Targets: the CLI for linux-x64 (Native AOT is built on the OS it targets);
+//   the GUI for linux-x64 and win-x64 (the Skia desktop head cross-compiles).
+//
+// The agent needs mise on PATH, plus the system packages Native AOT and the
+// packaging use: clang, zlib headers, tar, zip, curl and jq. The .NET SDK and
+// just come from mise.toml. Tag builds also need a "Secret text" credential
+// `github-token` with contents:write on KopyTKG/Sleepy.
+//
+// AUR publishing needs the SSH Agent plugin, makepkg on the agent (an Arch-based
+// agent; it writes .SRCINFO), and an "SSH Username with private key" credential
+// `aur-ssh` holding the key registered with the AUR account — its passphrase
+// goes in the credential, so the key does not have to be stored unlocked.
+
+def GUI_TARGETS = ['linux-x64', 'win-x64']
+
+pipeline {
+    agent any
+
+    options {
+        timestamps()
+        disableConcurrentBuilds(abortPrevious: true)
+        timeout(time: 45, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '30', artifactNumToKeepStr: '5'))
+    }
+
+    environment {
+        DOTNET_NOLOGO = '1'
+        DOTNET_CLI_TELEMETRY_OPTOUT = '1'
+        DOTNET_SKIP_FIRST_TIME_EXPERIENCE = '1'
+        NUGET_PACKAGES = "${WORKSPACE}/.nuget"
+    }
+
+    stages {
+        stage('Prepare') {
+            steps {
+                // Trust this checkout's mise.toml, then install what it pins.
+                sh '''
+                    mise trust --quiet "$WORKSPACE/mise.toml"
+                    mise install
+                '''
+            }
+        }
+
+        stage('Lint') {
+            steps {
+                sh 'mise exec -- dotnet format --verify-no-changes'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh '''
+                    mise exec -- dotnet test tests/Sleepy.Core.Tests/Sleepy.Core.Tests.csproj -c Release --nologo \
+                        --logger "junit;LogFilePath=$WORKSPACE/test-results.xml"
+                '''
+            }
+            post {
+                always {
+                    junit allowEmptyResults: false, testResults: 'test-results.xml'
+                }
+            }
+        }
+
+        stage('Publish') {
+            when { buildingTag() }
+            steps {
+                sh '''
+                    rm -rf dist && mkdir -p dist
+                    mise exec -- dotnet publish src/Sleepy.Cli/Sleepy.Cli.csproj -c Release -r linux-x64 -o dist/cli
+                    ./dist/cli/sleepy --version
+                    cp dist/cli/sleepy dist/sleepy
+                '''
+
+                script {
+                    for (target in GUI_TARGETS) {
+                        sh """
+                            mise exec -- dotnet publish src/Sleepy.Gui/Sleepy.Gui.csproj -c Release \
+                                -f net10.0-desktop -r ${target} --self-contained -o dist/gui-${target}
+                        """
+                        if (target.startsWith('linux')) {
+                            sh "tar -czf dist/sleepy-gui-${target}.tar.gz -C dist/gui-${target} ."
+                        } else {
+                            sh "cd dist/gui-${target} && zip -qr ../sleepy-gui-${target}.zip ."
+                        }
+                    }
+                }
+
+                archiveArtifacts artifacts: 'dist/sleepy, dist/sleepy-gui-*.tar.gz, dist/sleepy-gui-*.zip',
+                    fingerprint: true
+            }
+        }
+
+        stage('Release') {
+            when { buildingTag() }
+            steps {
+                withCredentials([string(credentialsId: 'github-token', variable: 'GH_TOKEN')]) {
+                    sh '''
+                        ci/github-release.sh "$TAG_NAME" \
+                            dist/sleepy dist/sleepy-gui-*.tar.gz dist/sleepy-gui-*.zip
+                    '''
+                }
+            }
+        }
+
+        stage('AUR') {
+            when { buildingTag() }
+            environment {
+                GIT_AUTHOR_NAME = 'Martin Kopecký'
+                GIT_AUTHOR_EMAIL = 'kopecky@thekrew.app'
+                GIT_COMMITTER_NAME = 'Martin Kopecký'
+                GIT_COMMITTER_EMAIL = 'kopecky@thekrew.app'
+                GIT_SSH_COMMAND = 'ssh -o StrictHostKeyChecking=accept-new'
+            }
+            steps {
+                sshagent(credentials: ['aur-ssh']) {
+                    sh 'mise exec -- just aur-publish "${TAG_NAME#v}"'
+                }
+            }
+        }
+    }
+}
