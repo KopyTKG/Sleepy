@@ -321,4 +321,22 @@
   <data name="Pending_Cancel" xml:space="preserve">
     <value>Zrušit</value>
   </data>
+  <data name="Scale_Auto" xml:space="preserve">
+    <value>Automatické měřítko</value>
+  </data>
+  <data name="Scale_RestartTitle" xml:space="preserve">
+    <value>Měřítko rozhraní</value>
+  </data>
+  <data name="Scale_RestartMessage" xml:space="preserve">
+    <value>Nové měřítko se projeví po novém spuštění sleepy-GUI. Načtenou specifikaci bude potřeba načíst znovu.</value>
+  </data>
+  <data name="Scale_RestartNow" xml:space="preserve">
+    <value>Restartovat</value>
+  </data>
+  <data name="Scale_Later" xml:space="preserve">
+    <value>Později</value>
+  </data>
+  <data name="Status_RestartFailed" xml:space="preserve">
+    <value>Restart se nezdařil; nové měřítko se použije při příštím spuštění sleepy-GUI.</value>
+  </data>
 </root>

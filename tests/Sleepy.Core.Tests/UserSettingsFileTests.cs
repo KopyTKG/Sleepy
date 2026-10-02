@@ -19,6 +19,7 @@ public class UserSettingsFileTests : IDisposable
             Layout = FolderLayout.Flat,
             RequestHeader = "Authorization: Bearer x",
             IgnoreCertificateErrors = true,
+            UiScale = 1.25,
         };
 
         Assert.True(UserSettingsFile.Write(Path_, settings));
@@ -84,6 +85,38 @@ public class UserSettingsFileTests : IDisposable
 
         Assert.Equal(expected, json["layout"]?.GetValue<string>());
     }
+
+    [Theory]
+    [InlineData("1.5", 1.5)]
+    [InlineData("1", 1.0)]
+    [InlineData("0", 0.0)]
+    [InlineData("-2", 0.0)]
+    [InlineData("0.1", UserSettings.MinUiScale)]
+    [InlineData("12", UserSettings.MaxUiScale)]
+    [InlineData("\"big\"", 0.0)]
+    public void ReadsTheUiScaleClampedToWhatIsUsable(string json, double expected)
+    {
+        var settings = UserSettingsFile.FromJson(JsonNode.Parse($$"""{"uiScale":{{json}}}"""));
+
+        Assert.Equal(expected, settings.UiScale);
+    }
+
+    [Theory]
+    [InlineData("1.5", 1.5)]
+    [InlineData("150", 1.5)]
+    [InlineData("150%", 1.5)]
+    [InlineData(" 125 % ", 1.25)]
+    [InlineData("2", 2.0)]
+    [InlineData("1000%", UserSettings.MaxUiScale)]
+    [InlineData("big", 0.0)]
+    [InlineData("", 0.0)]
+    [InlineData(null, 0.0)]
+    public void ParsesAScaleTheWayPeopleTypeIt(string? text, double expected)
+        => Assert.Equal(expected, UserSettings.ParseUiScale(text));
+
+    [Fact]
+    public void FollowsTheDisplayWhenNoScaleIsStored()
+        => Assert.Equal(0, UserSettingsFile.FromJson(JsonNode.Parse("{}")).UiScale);
 
     [Fact]
     public void NeverWritesACredential()

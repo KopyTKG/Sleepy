@@ -205,8 +205,8 @@ needs the Windows SDK and is enabled automatically when the build runs there.
 ### What it remembers
 
 The app keeps its choices in `~/.config/sleepy/settings.json` (`%AppData%\sleepy`
-on Windows): the language, the output format, the folder layout, and the fetch
-options — the request header and whether TLS errors are ignored. The About
+on Windows): the language, the interface scale, the output format, the folder layout, and
+the fetch options — the request header and whether TLS errors are ignored. The About
 dialog names the file.
 
 The bearer token and the base URL are deliberately not saved. Both are per-API,
@@ -245,6 +245,18 @@ The Linux build carries one binary and three launchers:
 
 The host can also be forced with `--display x11`, `--display framebuffer`, or
 `SLEEPY_GUI_DISPLAY`.
+
+### Interface scale
+
+On a dense display the default size can be too small to read. The scale picker
+in the status bar sets it — *Auto scale* follows the display, or pick 100–250 %
+— and offers to restart, because the display host reads the scale once, at
+startup. The choice is saved with the other preferences.
+
+For a one-off, `sleepy-gui --scale 150%` (also `1.5` or `150`) overrides the
+saved value for that run, and an `UNO_DISPLAY_SCALE_OVERRIDE` already in the
+environment is respected over the saved value. This applies on Linux, X11 and
+Wayland alike; on Windows the app follows Windows' own display scaling.
 
 `install.sh` in the same folder installs the app to `~/.local/share/sleepy-gui`,
 puts the launchers on `PATH`, and registers both desktop entries and the icon

@@ -92,6 +92,10 @@ public static class UserSettingsFile
             Json.Get(node, "ignoreCertificateErrors") is JsonValue value
             && value.TryGetValue<bool>(out var ignore)
             && ignore,
+        UiScale = Json.Get(node, "uiScale") is JsonValue scaleValue
+            && scaleValue.TryGetValue<double>(out var scale)
+                ? UserSettings.NormalizeUiScale(scale)
+                : 0,
     };
 
     public static JsonNode ToJson(UserSettings settings) => new JsonObject
@@ -101,6 +105,7 @@ public static class UserSettingsFile
         ["layout"] = settings.Layout.ToString().ToLowerInvariant(),
         ["requestHeader"] = settings.RequestHeader,
         ["ignoreCertificateErrors"] = settings.IgnoreCertificateErrors,
+        ["uiScale"] = UserSettings.NormalizeUiScale(settings.UiScale),
     };
 
     private static FolderLayout ParseLayout(string? value)

@@ -235,6 +235,11 @@
           <Button x:Uid="AboutButton" Content="About" Click="OnAboutClick" Padding="10,3"
                   FontSize="12" MinWidth="0" Background="Transparent" BorderThickness="0"
                   Foreground="{StaticResource SecondaryTextBrush}" VerticalAlignment="Center" />
+          <!-- Interface scale. Read by the display host at startup, so changing it
+               offers a restart; filled in code-behind and shown only where the
+               host honours it. -->
+          <ComboBox x:Name="ScalePicker" MinHeight="28" MinWidth="120" FontSize="12"
+                    SelectionChanged="OnScaleChanged" Visibility="Collapsed" />
           <ComboBox x:Name="LanguagePicker" MinHeight="28" MinWidth="150"
                     FontSize="12" SelectionChanged="OnLanguageChanged">
             <ComboBoxItem x:Uid="LanguageSystemItem" Content="System language" />

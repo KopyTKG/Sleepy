@@ -6,6 +6,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Interface scale** for the desktop app (#1): a picker in the status bar sets
+  100–250 % or follows the display, is saved with the other preferences, and
+  offers to restart since the display host reads it at startup.
+  `sleepy-gui --scale 150%` overrides it for one run. Linux only; Windows
+  follows its own display scaling.
+
 ## [0.6.1] — 2026-08-31
 
 ### Added

@@ -12,12 +12,19 @@ namespace Sleepy.Gui;
 public sealed partial class MainPage : Page
 {
     private bool _languageReady;
+    private bool _scaleReady;
+
+    /// <summary>The scales offered; 0 means follow the display.</summary>
+    private static readonly double[] Scales = [0, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5];
+
+    private readonly List<double> _scaleChoices = [];
 
     public MainPage()
     {
         this.InitializeComponent();
         DataContext = ViewModel;
         SelectCurrentLanguage();
+        FillScalePicker();
 
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         PreviewHighlighter.Render(PreviewText, ViewModel.Preview);
@@ -44,6 +51,86 @@ public sealed partial class MainPage : Page
 
         LanguagePicker.SelectedIndex = current.Length == 0 ? 0 : index + 1;
         _languageReady = true;
+    }
+
+    /// <summary>
+    /// Lists the scales, adding the saved one if it was set by hand to something
+    /// in between, and selects it without treating that as a change.
+    /// </summary>
+    private void FillScalePicker()
+    {
+        // Only the X11 host reads a scale override; Windows follows its own
+        // display settings, so offering one there would be a control that does nothing.
+        if (!OperatingSystem.IsLinux())
+        {
+            return;
+        }
+
+        var saved = UserSettings.NormalizeUiScale(Settings.Current.UiScale);
+        _scaleChoices.AddRange(Scales);
+        if (!_scaleChoices.Contains(saved))
+        {
+            _scaleChoices.Add(saved);
+            _scaleChoices.Sort();
+        }
+
+        foreach (var scale in _scaleChoices)
+        {
+            ScalePicker.Items.Add(new ComboBoxItem
+            {
+                Content = scale == 0
+                    ? Localizer.Get("Scale_Auto")
+                    : $"{Math.Round(scale * 100).ToString(System.Globalization.CultureInfo.CurrentCulture)} %",
+            });
+        }
+
+        ScalePicker.SelectedIndex = _scaleChoices.IndexOf(saved);
+        ScalePicker.Visibility = Visibility.Visible;
+        _scaleReady = true;
+    }
+
+    private async void OnScaleChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_scaleReady || ScalePicker.SelectedIndex < 0)
+        {
+            return;
+        }
+
+        var scale = _scaleChoices[ScalePicker.SelectedIndex];
+        if (scale == UserSettings.NormalizeUiScale(Settings.Current.UiScale))
+        {
+            return;
+        }
+
+        Settings.Update(settings => settings with { UiScale = scale });
+
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            Title = Localizer.Get("Scale_RestartTitle"),
+            Content = new TextBlock
+            {
+                Text = Localizer.Get("Scale_RestartMessage"),
+                TextWrapping = TextWrapping.Wrap,
+            },
+            PrimaryButtonText = Localizer.Get("Scale_RestartNow"),
+            CloseButtonText = Localizer.Get("Scale_Later"),
+            DefaultButton = ContentDialogButton.Primary,
+        };
+
+        if (await dialog.ShowAsync() == ContentDialogResult.Primary && !RestartWithScale(scale))
+        {
+            ViewModel.SetError(Localizer.Get("Status_RestartFailed"));
+        }
+    }
+
+    private static bool RestartWithScale(double scale)
+    {
+#if WINDOWS
+        return false;
+#else
+        return Program.Restart(scale);
+#endif
     }
 
     private void OnLanguageChanged(object sender, SelectionChangedEventArgs e)
