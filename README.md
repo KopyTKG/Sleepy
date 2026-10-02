@@ -371,7 +371,8 @@ dotnet publish src/Sleepy.Cli/Sleepy.Cli.csproj -c Release -r linux-x64 -o dist/
 ```
 
 The CLI release build uses **Native AOT**, which links with `clang` and needs the
-zlib headers (`apt-get install clang zlib1g-dev` on Debian/Ubuntu). Swap
+rest of the C toolchain it brings along (`apt-get install clang` on
+Debian/Ubuntu); zlib is not needed, since .NET 10 links its own. Swap
 `-r linux-x64` for `win-x64`, `osx-arm64`, etc. — Native AOT must be built on the
 target OS. The desktop app has no such restriction and cross-publishes from
 Linux to Windows.

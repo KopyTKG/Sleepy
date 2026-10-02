@@ -85,7 +85,7 @@ gui *args:
 # Publish
 # --------------------------------------------------------------------------
 
-# Native AOT CLI for this machine's OS (needs clang + zlib headers).
+# Native AOT CLI for this machine's OS (needs clang).
 publish-cli rid="linux-x64":
     dotnet publish {{cli}} -c {{configuration}} -r {{rid}} -o {{dist}}/cli-{{rid}}
     @echo "-> {{dist}}/cli-{{rid}}/sleepy"
@@ -170,6 +170,19 @@ aur-publish version:
     work=$(mktemp -d)
     trap 'rm -rf "$work"' EXIT
 
+    # .SRCINFO comes from makepkg. Where there is none (a Debian build agent),
+    # an Arch container generates it from a copy of the PKGBUILD; git and SSH
+    # stay on the host, so the SSH agent never has to reach into a container.
+    srcinfo() {
+        if command -v makepkg >/dev/null; then
+            makepkg --printsrcinfo
+        else
+            docker run --rm -v "$PWD/PKGBUILD:/in/PKGBUILD:ro" -u "$(id -u):$(id -g)" \
+                archlinux:base-devel \
+                sh -c 'mkdir -p /tmp/pkg && cp /in/PKGBUILD /tmp/pkg/ && cd /tmp/pkg && makepkg --printsrcinfo'
+        fi
+    }
+
     for package in sleepy-bin sleepy-gui-bin; do
         echo "==> $package"
         git clone --quiet "ssh://aur@aur.archlinux.org/$package.git" "$work/$package"
@@ -177,7 +190,7 @@ aur-publish version:
 
         (
             cd "$work/$package"
-            makepkg --printsrcinfo > .SRCINFO
+            srcinfo > .SRCINFO
             git add PKGBUILD .SRCINFO
             if git diff --cached --quiet; then
                 echo "    already at {{version}}"

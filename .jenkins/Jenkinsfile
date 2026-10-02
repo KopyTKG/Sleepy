@@ -5,13 +5,15 @@
 // - Targets: the CLI for linux-x64 (Native AOT is built on the OS it targets);
 //   the GUI for linux-x64 and win-x64 (the Skia desktop head cross-compiles).
 //
-// The agent needs mise on PATH, plus the system packages Native AOT and the
-// packaging use: clang, zlib headers, tar, zip, curl and jq. The .NET SDK and
-// just come from mise.toml. Tag builds also need a "Secret text" credential
+// The agent needs mise on PATH, plus what mise cannot provide: clang (Native
+// AOT links with it, and it brings the linker and libc headers along) and zip.
+// tar and curl are assumed. The .NET SDK, just and jq come from mise.toml; zlib
+// needs nothing, since .NET 10 links its own. Tag builds also need a "Secret text" credential
 // `github-token` with contents:write on KopyTKG/Sleepy.
 //
-// AUR publishing needs the SSH Agent plugin, makepkg on the agent (an Arch-based
-// agent; it writes .SRCINFO), and an "SSH Username with private key" credential
+// AUR publishing needs the SSH Agent plugin, makepkg or Docker on the agent (an
+// Arch container writes .SRCINFO where there is no makepkg; the jenkins user
+// must be able to run docker), and an "SSH Username with private key" credential
 // `aur-ssh` holding the key registered with the AUR account — its passphrase
 // goes in the credential, so the key does not have to be stored unlocked.
 
@@ -99,7 +101,7 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'github-token', variable: 'GH_TOKEN')]) {
                     sh '''
-                        ci/github-release.sh "$TAG_NAME" \
+                        mise exec -- ci/github-release.sh "$TAG_NAME" \
                             dist/sleepy dist/sleepy-gui-*.tar.gz dist/sleepy-gui-*.zip
                     '''
                 }

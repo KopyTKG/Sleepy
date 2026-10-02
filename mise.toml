@@ -1,6 +1,7 @@
 [tools]
 dotnet = "10.0.302"
 just = "latest"
+jq = "1.8.1"
 
 [env]
 DOTNET_NOLOGO = "1"

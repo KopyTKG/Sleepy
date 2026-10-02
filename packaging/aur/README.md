@@ -76,8 +76,10 @@ the GitHub release it takes checksums from. It needs:
   passphrase goes in the credential, so the key is never stored unlocked —
   though anyone who can use that credential can publish as you, so keep the job
   restricted;
-- **makepkg** on the agent, which in practice means an Arch-based agent: it is
-  what writes `.SRCINFO`.
+- **makepkg** on the agent, or **Docker** where there is none: `.SRCINFO` is then
+  written by `makepkg` in an `archlinux:base-devel` container, from a copy of
+  the PKGBUILD. Git and SSH stay on the host, so no Docker plugin is involved —
+  the `jenkins` user just has to be able to run `docker`.
 
 Running `just aur-publish` by hand still works, and is the fallback when the
 stage fails: it is safe to run again, and reports a package already at the
