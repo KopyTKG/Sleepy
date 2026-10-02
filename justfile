@@ -139,13 +139,13 @@ version:
 aur version:
     #!/usr/bin/env bash
     set -euo pipefail
-    registry="https://gitlab.com/api/v4/projects/84670021/packages/generic/sleepy/v{{version}}"
+    release="https://github.com/KopyTKG/Sleepy/releases/download/v{{version}}"
     work=$(mktemp -d)
     trap 'rm -rf "$work"' EXIT
 
-    curl --fail --silent --show-error --location -o "$work/sleepy" "$registry/sleepy"
-    curl --fail --silent --show-error --location -o "$work/gui.tar.gz" "$registry/sleepy-gui-linux-x64.tar.gz"
-    curl --fail --silent --show-error --location -o "$work/LICENSE"         "https://gitlab.com/kopytkg/sleepy/-/raw/v{{version}}/LICENSE"
+    curl --fail --silent --show-error --location -o "$work/sleepy" "$release/sleepy"
+    curl --fail --silent --show-error --location -o "$work/gui.tar.gz" "$release/sleepy-gui-linux-x64.tar.gz"
+    curl --fail --silent --show-error --location -o "$work/LICENSE"         "https://raw.githubusercontent.com/KopyTKG/Sleepy/v{{version}}/LICENSE"
 
     cli=$(sha256sum "$work/sleepy" | cut -d' ' -f1)
     gui=$(sha256sum "$work/gui.tar.gz" | cut -d' ' -f1)

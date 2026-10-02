@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- The project moved to GitHub (`KopyTKG/Sleepy`): issue and pull request
+  templates are GitHub's, CI runs on Jenkins (`Jenkinsfile`), and releases are
+  GitHub releases. The AUR packages download from there from the next release.
+
 ### Added
 
 - **Interface scale** for the desktop app (#1): a picker in the status bar sets
@@ -125,9 +131,9 @@ Rewritten from Odin to C#. Single-spec output is byte-identical to 0.2.0.
   export, with tag folders, bearer authentication, and generated request-body
   examples.
 
-[Unreleased]: https://gitlab.com/kopytkg/sleepy/-/compare/v0.6.1...main
-[0.6.1]: https://gitlab.com/kopytkg/sleepy/-/releases/v0.6.1
-[0.6.0]: https://gitlab.com/kopytkg/sleepy/-/releases/v0.6.0
-[0.5.0]: https://gitlab.com/kopytkg/sleepy/-/releases/v0.5.0
+[Unreleased]: https://github.com/KopyTKG/Sleepy/compare/v0.6.1...main
+[0.6.1]: https://github.com/KopyTKG/Sleepy/releases/tag/v0.6.1
+[0.6.0]: https://github.com/KopyTKG/Sleepy/releases/tag/v0.6.0
+[0.5.0]: https://github.com/KopyTKG/Sleepy/releases/tag/v0.5.0
 [0.2.0]: https://gitlab.com/kopytkg/sleepy/-/releases/v0.2.0
 [0.1.0]: https://gitlab.com/kopytkg/sleepy/-/releases/v0.1.0

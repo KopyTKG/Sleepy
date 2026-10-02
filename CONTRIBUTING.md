@@ -1,14 +1,14 @@
 # Contributing to sleepy
 
-Thanks for taking a look. Issues and merge requests are welcome — including
+Thanks for taking a look. Issues and pull requests are welcome — including
 "this spec produced something odd", which is the most useful kind of report this
 project gets.
 
 ## Getting set up
 
 ```sh
-git clone git@gitlab.com:kopytkg/sleepy.git
-cd sleepy
+git clone git@github.com:KopyTKG/Sleepy.git
+cd Sleepy
 mise install     # .NET 10 SDK + just, as pinned in mise.toml
 just             # every task lives here
 ```
@@ -27,7 +27,7 @@ just run tests/Sleepy.Core.Tests/Fixtures/openapi.json
 just gui                           # the desktop app
 ```
 
-Before opening a merge request:
+Before opening a pull request:
 
 ```sh
 just lint                          # formatting, same check CI runs
@@ -93,31 +93,33 @@ To add a language: copy the `en` folder, translate the values, add the tag to
 `MainPage.xaml`. Counted phrases use `Count_*.One` / `.Few` / `.Many` keys —
 languages that need only two forms can leave `.Few` out.
 
-## Merge requests
+## Pull requests
 
-- Branch off `main`; one topic per merge request.
+- Branch off `main`; one topic per pull request.
 - Commit messages: a short imperative summary line, then a body explaining why
   the change is right if that is not obvious from the diff. Bullet lists of what
   changed are less useful than one paragraph of reasoning.
 - Update `CHANGELOG.md` under `## [Unreleased]` for anything a user would
   notice. Internal refactors do not need an entry.
-- CI runs lint and the tests on every push; it must be green. The publish jobs
-  run only for tags, so a branch pipeline is quick.
+- CI (Jenkins) runs lint and the tests on every branch and pull request; it must
+  be green. The publish stages run only for tags, so a branch build is quick.
 
 ## Releasing
 
 Maintainers only:
 
 ```sh
-just set-version 0.6.0             # Directory.Build.props, SleepyInfo, the app manifest
+just set-version 0.7.0             # Directory.Build.props is the only place it lives
 # move the Unreleased entries in CHANGELOG.md under the new version
-git commit -am "Release 0.6.0"
-just tag 0.6.0
+git commit -am "Release 0.7.0"
+just tag 0.7.0
 git push origin main --follow-tags
 ```
 
-The tag triggers the release job, which uploads the CLI binary and both desktop
-archives to the package registry and creates the GitLab release.
+Jenkins builds the tag, publishes the CLI binary and both desktop archives, and
+creates the GitHub release with that version's changelog section as its notes.
+Once the release is up, `just aur-publish 0.7.0` updates the AUR packages — see
+`packaging/aur/README.md`.
 
 ## Licence
 

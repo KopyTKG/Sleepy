@@ -1,0 +1,23 @@
+name: Feature request
+description: Something sleepy makes hard or impossible.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do that sleepy makes hard or impossible?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you have in mind
+      description: Optional. A rough shape is enough — the CLI flag, the control, the output structure.
+  - type: textarea
+    id: breakage
+    attributes:
+      label: Anything that would break
+      description: >
+        Would this change existing exports? Deterministic, byte-identical output
+        is deliberate, so anything that shifts it needs a reason.

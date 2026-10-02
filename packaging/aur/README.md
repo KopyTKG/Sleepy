@@ -62,21 +62,21 @@ someone else the push is rejected, and the package needs renaming here first.
 `just aur 0.6.1` does the version and checksum part alone, without pushing, if
 you want to inspect the diff before it goes out.
 
-## Publishing from CI instead
+The PKGBUILDs download from the GitHub release for the version, so the release
+has to exist — Jenkins creates it when it builds the tag — before
+`just aur-publish` can take checksums from it.
 
-The `aur` job in `.gitlab-ci.yml` does the same on every tag, but only when
-`AUR_SSH_PRIVATE_KEY` is set as a masked CI variable (with `AUR_EMAIL` for the
-commit author). Without it the job does not appear in the pipeline at all, so a
-fork is unaffected.
+## Why this is not in CI
 
-The key you put there is a deploy key for your AUR account: whoever can read
-that variable can publish packages as you. A key used for nothing else is the
-sane choice.
+Publishing needs your AUR SSH key, and a key with a passphrase cannot be used
+from a build agent. Putting a passphrase-less one into Jenkins would work, but
+whoever can read that credential can then publish packages as you; running one
+command after each release is the safer trade.
 
 ## Maintaining them
 
 - A package that lags its upstream is worse than no package, so publish each
-  release — that is what the CI job is for.
+  release; `just aur-publish` after the GitHub release is the whole job.
 - `pkgrel` goes up when the packaging changes but the version does not; `just
   aur` resets it to 1 for a new version.
 - Comments on the AUR page are where users report packaging problems, and they

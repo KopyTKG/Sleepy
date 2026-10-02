@@ -25,7 +25,7 @@ paru -S sleepy-gui-bin    # the desktop app
 ```
 
 Otherwise take the binary or the desktop bundle from the
-[latest release](https://gitlab.com/kopytkg/sleepy/-/releases), or build from
+[latest release](https://github.com/KopyTKG/Sleepy/releases), or build from
 source as below.
 
 ## Quick start
@@ -376,9 +376,11 @@ zlib headers (`apt-get install clang zlib1g-dev` on Debian/Ubuntu). Swap
 target OS. The desktop app has no such restriction and cross-publishes from
 Linux to Windows.
 
-CI (`.gitlab-ci.yml`) runs lint and the tests on every push. The three publish
-jobs and the release itself only run for a tag, so branch pipelines stay quick
-and the binaries are built once, for the release that ships them.
+CI runs on Jenkins (`Jenkinsfile`): lint and the tests for every branch and pull
+request; the three publishes and the GitHub release only for a tag, so branch
+builds stay quick and the binaries are built once, for the release that ships
+them. `ci/github-release.sh` creates or updates the release and its assets, and
+is safe to re-run.
 
 ### Tests
 
@@ -411,6 +413,8 @@ output changes on purpose, re-record it with `just bless` and read the diff.
 | `tests/Sleepy.Core.Tests/` | engine tests, including the golden export fixture |
 | `icon.png` | app artwork; Uno.Resizetizer generates every icon size from it |
 | `justfile`, `mise.toml` | task runner and pinned toolchain |
+| `Jenkinsfile`, `ci/github-release.sh` | CI on Jenkins, and the script that cuts a GitHub release |
+| `.github/` | issue forms and the pull request template |
 
 ## Scope
 
